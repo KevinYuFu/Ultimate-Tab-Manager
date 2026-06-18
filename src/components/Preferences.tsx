@@ -1,3 +1,4 @@
+import { ArrowLeft, ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { THEMES, type Theme } from '../themes'
 import { DEFAULT_HOTKEYS, type Hotkeys } from '../types'
@@ -63,7 +64,7 @@ export default function Preferences({
   return (
     <div className="prefs-view">
       <header className="prefs-header">
-        <button className="back-btn" onClick={onBack}>←</button>
+        <button className="back-btn" onClick={onBack}><ArrowLeft size={15} strokeWidth={1.75} /></button>
         <span className="prefs-title">Preferences</span>
       </header>
 
@@ -72,10 +73,7 @@ export default function Preferences({
         <div className="prefs-section">
           <div className="prefs-section-label">Extension Shortcut</div>
           <button className="shortcut-btn" onClick={copyShortcutUrl}>
-            <svg width="13" height="13" viewBox="0 0 15 15" fill="none">
-              <path d="M8.5 2H13v4.5M13 2l-6 6M6 3H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V9"
-                stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <ExternalLink size={13} strokeWidth={1.75} />
             {shortcutCopied ? '✓ Copied — paste in your address bar' : 'Set Extension Shortcut'}
           </button>
           <p className="shortcut-hint">
