@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Ultimate Tab Manager",
+  "version": "0.1.0",
+  "description": "A keyboard-driven Chrome Extension for tab hoarders.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Ultimate Tab Manager"
+  },
+  "permissions": ["tabs", "storage"]
+}
