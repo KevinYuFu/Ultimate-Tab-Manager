@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Check, ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { THEMES, type Theme } from '../themes'
 import { DEFAULT_HOTKEYS, type Hotkeys } from '../types'
@@ -31,7 +31,6 @@ export default function Preferences({
   onBack,
 }: Props) {
   const [editingKey, setEditingKey] = useState<keyof Hotkeys | null>(null)
-  const [shortcutCopied, setShortcutCopied] = useState(false)
   const editingRef = useRef<keyof Hotkeys | null>(null)
   editingRef.current = editingKey
 
@@ -55,10 +54,8 @@ export default function Preferences({
     }
   }, [hotkeys, onHotkeysChange])
 
-  const copyShortcutUrl = () => {
-    navigator.clipboard.writeText('chrome://extensions/shortcuts')
-    setShortcutCopied(true)
-    setTimeout(() => setShortcutCopied(false), 2500)
+  const openShortcutsPage = () => {
+    chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
   }
 
   return (
@@ -71,14 +68,31 @@ export default function Preferences({
       <div className="prefs-content">
 
         <div className="prefs-section">
-          <div className="prefs-section-label">Extension Shortcut</div>
-          <button className="shortcut-btn" onClick={copyShortcutUrl}>
-            <ExternalLink size={13} strokeWidth={1.75} />
-            {shortcutCopied ? '✓ Copied — paste in your address bar' : 'Set Extension Shortcut'}
-          </button>
-          <p className="shortcut-hint">
-            Paste <code>chrome://extensions/shortcuts</code> in your address bar to bind a key to open UTM.
-          </p>
+          <div className="prefs-section-label">Theme</div>
+          <div className="theme-grid">
+            {THEMES.map(theme => (
+              <button
+                key={theme.id}
+                className={`theme-card${currentThemeId === theme.id ? ' selected' : ''}`}
+                onClick={() => onThemeChange(theme)}
+                style={{ background: theme.bg, borderColor: currentThemeId === theme.id ? theme.accent : theme.borderMd }}
+              >
+                <div className="theme-card-preview">
+                  <span className="theme-card-bar" style={{ background: theme.accent, width: '70%' }} />
+                  <span className="theme-card-bar" style={{ background: theme.text2, width: '90%' }} />
+                  <span className="theme-card-bar" style={{ background: theme.surface2, width: '50%' }} />
+                </div>
+                <div className="theme-card-footer">
+                  <span className="theme-card-name" style={{ color: theme.text1 }}>{theme.name}</span>
+                  {currentThemeId === theme.id && (
+                    <span className="theme-card-check" style={{ background: theme.accent }}>
+                      <Check size={9} strokeWidth={3} color={theme.bg} />
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="prefs-section">
@@ -107,23 +121,14 @@ export default function Preferences({
         </div>
 
         <div className="prefs-section">
-          <div className="prefs-section-label">Theme</div>
-          <div className="theme-list">
-            {THEMES.map(theme => (
-              <div
-                key={theme.id}
-                className={`theme-option${currentThemeId === theme.id ? ' selected' : ''}`}
-                onClick={() => onThemeChange(theme)}
-              >
-                <div className="theme-swatch">
-                  {[theme.bg, theme.surface2, theme.accent, theme.text1].map((c, i) => (
-                    <div key={i} className="swatch-dot" style={{ background: c }} />
-                  ))}
-                </div>
-                <span className="theme-name">{theme.name}</span>
-              </div>
-            ))}
-          </div>
+          <div className="prefs-section-label">Extension Shortcut</div>
+          <button className="shortcut-btn" onClick={openShortcutsPage}>
+            <ExternalLink size={13} strokeWidth={1.75} />
+            Set Extension Shortcut
+          </button>
+          <p className="shortcut-hint">
+            Opens <code>chrome://extensions/shortcuts</code> where you can bind a key to open UTM.
+          </p>
         </div>
 
       </div>
