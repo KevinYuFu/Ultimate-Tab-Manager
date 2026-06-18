@@ -32,12 +32,19 @@ export default function App() {
   }
 
   const cssVars = {
-    '--bg': theme.bg,
-    '--surface': theme.surface,
-    '--border': theme.border,
-    '--text': theme.text,
-    '--muted': theme.muted,
-    '--accent': theme.accent,
+    '--bg':          theme.bg,
+    '--surface':     theme.surface,
+    '--surface-2':   theme.surface2,
+    '--hover':       theme.hover,
+    '--border':      theme.border,
+    '--border-md':   theme.borderMd,
+    '--border-hi':   theme.borderHi,
+    '--text-1':      theme.text1,
+    '--text-2':      theme.text2,
+    '--text-3':      theme.text3,
+    '--accent':      theme.accent,
+    '--accent-soft': theme.accentSoft,
+    '--accent-2':    theme.accent2,
   } as React.CSSProperties
 
   return (
