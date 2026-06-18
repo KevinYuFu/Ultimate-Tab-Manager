@@ -96,6 +96,17 @@ export default function Preferences({
         </div>
 
         <div className="prefs-section">
+          <div className="prefs-section-label">Extension Shortcut</div>
+          <button className="shortcut-btn" onClick={openShortcutsPage}>
+            <ExternalLink size={13} strokeWidth={1.75} />
+            Set Extension Shortcut
+          </button>
+          <p className="shortcut-hint">
+            Opens <code>chrome://extensions/shortcuts</code> where you can bind a key to open UTM.
+          </p>
+        </div>
+
+        <div className="prefs-section">
           <div className="prefs-section-label-row">
             <div className="prefs-section-label">Hotkeys</div>
             <button className="reset-btn" onClick={() => onHotkeysChange({ ...DEFAULT_HOTKEYS })}>
@@ -118,17 +129,6 @@ export default function Preferences({
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="prefs-section">
-          <div className="prefs-section-label">Extension Shortcut</div>
-          <button className="shortcut-btn" onClick={openShortcutsPage}>
-            <ExternalLink size={13} strokeWidth={1.75} />
-            Set Extension Shortcut
-          </button>
-          <p className="shortcut-hint">
-            Opens <code>chrome://extensions/shortcuts</code> where you can bind a key to open UTM.
-          </p>
         </div>
 
       </div>
