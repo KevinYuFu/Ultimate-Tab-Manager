@@ -1,38 +1,38 @@
 import { ArrowLeft, Check, ExternalLink } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { THEMES, type Theme } from '../themes'
-import { DEFAULT_HOTKEYS, type Hotkeys } from '../types'
+import { DEFAULT_KEYBINDINGS, type Keybindings, type Operation } from '../types'
 import { captureKey, displayKey } from '../utils'
 
-const HOTKEY_LABELS: { key: keyof Hotkeys; label: string }[] = [
-  { key: 'stash',        label: 'Stash tab' },
-  { key: 'stashAll',     label: 'Stash all tabs' },
-  { key: 'newBin',       label: 'New bin' },
-  { key: 'open',         label: 'Open tab(s)' },
-  { key: 'editName',     label: 'Edit tab name' },
-  { key: 'delete',       label: 'Delete' },
-  { key: 'openFullView', label: 'Open full view' },
-  { key: 'undo',         label: 'Undo' },
+const OPERATION_LABELS: { op: Operation; label: string }[] = [
+  { op: 'stash',        label: 'Stash tab' },
+  { op: 'stashAll',     label: 'Stash all tabs' },
+  { op: 'newBin',       label: 'New bin' },
+  { op: 'open',         label: 'Open tab(s)' },
+  { op: 'editName',     label: 'Edit tab name' },
+  { op: 'delete',       label: 'Delete' },
+  { op: 'openFullView', label: 'Open full view' },
+  { op: 'undo',         label: 'Undo' },
 ]
 
 type Props = {
   currentThemeId: string
   onThemeChange: (theme: Theme) => void
-  hotkeys: Hotkeys
-  onHotkeysChange: (hotkeys: Hotkeys) => void
+  keybindings: Keybindings
+  onKeybindingsChange: (keybindings: Keybindings) => void
   onBack: () => void
 }
 
 export default function Preferences({
   currentThemeId,
   onThemeChange,
-  hotkeys,
-  onHotkeysChange,
+  keybindings,
+  onKeybindingsChange,
   onBack,
 }: Props) {
-  const [editingKey, setEditingKey] = useState<keyof Hotkeys | null>(null)
-  const editingRef = useRef<keyof Hotkeys | null>(null)
-  editingRef.current = editingKey
+  const [editingOp, setEditingOp] = useState<Operation | null>(null)
+  const editingRef = useRef<Operation | null>(null)
+  editingRef.current = editingOp
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,11 +40,11 @@ export default function Preferences({
       e.preventDefault()
       const captured = captureKey(e)
       if (!captured) return
-      onHotkeysChange({ ...hotkeys, [editingRef.current]: captured })
-      setEditingKey(null)
+      onKeybindingsChange({ ...keybindings, [editingRef.current]: captured })
+      setEditingOp(null)
     }
     const handleClickOutside = () => {
-      if (editingRef.current) setEditingKey(null)
+      if (editingRef.current) setEditingOp(null)
     }
     window.addEventListener('keydown', handleKeyDown)
     window.addEventListener('mousedown', handleClickOutside)
@@ -52,7 +52,7 @@ export default function Preferences({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [hotkeys, onHotkeysChange])
+  }, [keybindings, onKeybindingsChange])
 
   const openShortcutsPage = () => {
     chrome.tabs.create({ url: 'chrome://extensions/shortcuts' })
@@ -109,22 +109,22 @@ export default function Preferences({
         <div className="prefs-section">
           <div className="prefs-section-label-row">
             <div className="prefs-section-label">Hotkeys</div>
-            <button className="reset-btn" onClick={() => onHotkeysChange({ ...DEFAULT_HOTKEYS })}>
+            <button className="reset-btn" onClick={() => onKeybindingsChange({ ...DEFAULT_KEYBINDINGS })}>
               Reset to defaults
             </button>
           </div>
           <div className="hotkey-editor-list">
-            {HOTKEY_LABELS.map(({ key, label }) => (
-              <div key={key} className="hotkey-editor-row">
+            {OPERATION_LABELS.map(({ op, label }) => (
+              <div key={op} className="hotkey-editor-row">
                 <span className="hotkey-editor-label">{label}</span>
                 <button
-                  className={`hotkey-editor-key${editingKey === key ? ' listening' : ''}`}
+                  className={`hotkey-editor-key${editingOp === op ? ' listening' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation()
-                    setEditingKey(prev => prev === key ? null : key)
+                    setEditingOp(prev => prev === op ? null : op)
                   }}
                 >
-                  {editingKey === key ? '…' : displayKey(hotkeys[key])}
+                  {editingOp === op ? '…' : displayKey(keybindings[op])}
                 </button>
               </div>
             ))}

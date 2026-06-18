@@ -2,21 +2,21 @@ import { useEffect, useState } from 'react'
 import Navigator from './components/Navigator'
 import Preferences from './components/Preferences'
 import { THEMES, DEFAULT_THEME, type Theme } from './themes'
-import { DEFAULT_HOTKEYS, type Hotkeys, type View } from './types'
+import { DEFAULT_KEYBINDINGS, type Keybindings, type View } from './types'
 
 export default function App() {
   const [view, setView] = useState<View>('navigator')
   const [theme, setTheme] = useState<Theme>(DEFAULT_THEME)
-  const [hotkeys, setHotkeys] = useState<Hotkeys>(DEFAULT_HOTKEYS)
+  const [keybindings, setKeybindings] = useState<Keybindings>(DEFAULT_KEYBINDINGS)
 
   useEffect(() => {
-    chrome.storage.local.get(['themeId', 'hotkeys'], (result) => {
+    chrome.storage.local.get(['themeId', 'keybindings'], (result) => {
       if (result.themeId) {
         const found = THEMES.find(t => t.id === result.themeId)
         if (found) setTheme(found)
       }
-      if (result.hotkeys) {
-        setHotkeys({ ...DEFAULT_HOTKEYS, ...result.hotkeys })
+      if (result.keybindings) {
+        setKeybindings({ ...DEFAULT_KEYBINDINGS, ...result.keybindings })
       }
     })
   }, [])
@@ -26,9 +26,9 @@ export default function App() {
     chrome.storage.local.set({ themeId: t.id })
   }
 
-  const saveHotkeys = (h: Hotkeys) => {
-    setHotkeys(h)
-    chrome.storage.local.set({ hotkeys: h })
+  const saveKeybindings = (k: Keybindings) => {
+    setKeybindings(k)
+    chrome.storage.local.set({ keybindings: k })
   }
 
   const cssVars = {
@@ -50,13 +50,13 @@ export default function App() {
   return (
     <div className="app" style={cssVars}>
       {view === 'navigator' ? (
-        <Navigator hotkeys={hotkeys} onOpenPreferences={() => setView('preferences')} />
+        <Navigator keybindings={keybindings} onOpenPreferences={() => setView('preferences')} />
       ) : (
         <Preferences
           currentThemeId={theme.id}
           onThemeChange={applyTheme}
-          hotkeys={hotkeys}
-          onHotkeysChange={saveHotkeys}
+          keybindings={keybindings}
+          onKeybindingsChange={saveKeybindings}
           onBack={() => setView('navigator')}
         />
       )}

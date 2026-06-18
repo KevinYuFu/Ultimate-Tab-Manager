@@ -1,36 +1,36 @@
 import { Layers, Settings } from 'lucide-react'
-import type { Hotkeys } from '../types'
+import type { Keybindings, Operation } from '../types'
 import { displayKey } from '../utils'
 
-const PRIMARY: { key: keyof Hotkeys; label: string }[] = [
-  { key: 'stash',        label: 'Stash' },
-  { key: 'stashAll',     label: 'Stash All' },
+const PRIMARY: { op: Operation; label: string }[] = [
+  { op: 'stash',        label: 'Stash' },
+  { op: 'stashAll',     label: 'Stash All' },
 ]
 
-const SECONDARY: { key: keyof Hotkeys; label: string }[] = [
-  { key: 'newBin',       label: 'New Bin' },
-  { key: 'openFullView', label: 'Full View' },
-  { key: 'editName',     label: 'Edit Name' },
-  { key: 'delete',       label: 'Delete' },
-  { key: 'open',         label: 'Open' },
-  { key: 'undo',         label: 'Undo' },
+const SECONDARY: { op: Operation; label: string }[] = [
+  { op: 'newBin',       label: 'New Bin' },
+  { op: 'openFullView', label: 'Full View' },
+  { op: 'editName',     label: 'Edit Name' },
+  { op: 'delete',       label: 'Delete' },
+  { op: 'open',         label: 'Open' },
+  { op: 'undo',         label: 'Undo' },
 ]
 
 type Props = {
-  hotkeys: Hotkeys
+  keybindings: Keybindings
   onOpenPreferences: () => void
 }
 
-export default function Navigator({ hotkeys, onOpenPreferences }: Props) {
+export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   return (
     <div className="nav-view">
 
       <header className="nav-header">
         <span className="nav-logo">UTM</span>
         <div className="nav-header-right">
-          {PRIMARY.map(({ key, label }) => (
-            <button key={key} className="header-action-btn">
-              <kbd className="btn-kbd">{displayKey(hotkeys[key])}</kbd>
+          {PRIMARY.map(({ op, label }) => (
+            <button key={op} className="header-action-btn">
+              <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
               <span>{label}</span>
             </button>
           ))}
@@ -50,9 +50,9 @@ export default function Navigator({ hotkeys, onOpenPreferences }: Props) {
       </div>
 
       <div className="action-bar">
-        {SECONDARY.map(({ key, label }) => (
-          <button key={key} className="action-btn">
-            <kbd className="btn-kbd">{displayKey(hotkeys[key])}</kbd>
+        {SECONDARY.map(({ op, label }) => (
+          <button key={op} className="action-btn">
+            <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
             <span>{label}</span>
           </button>
         ))}

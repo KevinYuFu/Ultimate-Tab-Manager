@@ -15,18 +15,21 @@ export type Bin = {
   parentId: string | null
 }
 
-export type Hotkeys = {
-  stash: string
-  stashAll: string
-  openFullView: string
-  newBin: string
-  editName: string
-  delete: string
-  open: string
-  undo: string
-}
+// The operations the user can perform in the app.
+export type Operation =
+  | 'stash'
+  | 'stashAll'
+  | 'openFullView'
+  | 'newBin'
+  | 'editName'
+  | 'delete'
+  | 'open'
+  | 'undo'
 
-export const DEFAULT_HOTKEYS: Hotkeys = {
+// Maps each operation to the key that triggers it.
+export type Keybindings = Record<Operation, string>
+
+export const DEFAULT_KEYBINDINGS: Keybindings = {
   stash: 'S',
   stashAll: 'A',
   openFullView: 'M',
@@ -39,7 +42,7 @@ export const DEFAULT_HOTKEYS: Hotkeys = {
 
 export type Settings = {
   themeId: string
-  hotkeys: Hotkeys
+  keybindings: Keybindings
   tabs: Tab[]
   bins: Bin[]
 }
