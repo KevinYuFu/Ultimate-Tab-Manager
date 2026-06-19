@@ -63,7 +63,14 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   const handleOpen = (tab: Tab) => openStashedTab(tab)
 
+  const clearSelection = () => {
+    setSelectedIds(new Set())
+    anchorRef.current = null
+  }
+
   const handleSelect = (tab: Tab, e: React.MouseEvent) => {
+    // Don't let the click reach the background handler that clears selection.
+    e.stopPropagation()
     const id = tab.id
 
     // Shift: range-select from the anchor to the clicked tab.
@@ -121,7 +128,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         </div>
       </header>
 
-      <div className="navigator-area">
+      <div className="navigator-area" onClick={clearSelection}>
         {tabs.length === 0 ? (
           <div className="empty-state">
             <Layers size={36} className="empty-icon" strokeWidth={1.25} />
