@@ -31,24 +31,30 @@ export default function App() {
     chrome.storage.local.set({ keybindings: k })
   }
 
-  const cssVars = {
-    '--bg':          theme.bg,
-    '--surface':     theme.surface,
-    '--surface-2':   theme.surface2,
-    '--hover':       theme.hover,
-    '--border':      theme.border,
-    '--border-md':   theme.borderMd,
-    '--border-hi':   theme.borderHi,
-    '--text-1':      theme.text1,
-    '--text-2':      theme.text2,
-    '--text-3':      theme.text3,
-    '--accent':      theme.accent,
-    '--accent-soft': theme.accentSoft,
-    '--accent-2':    theme.accent2,
-  } as React.CSSProperties
+  useEffect(() => {
+    const vars: Record<string, string> = {
+      '--bg':          theme.bg,
+      '--surface':     theme.surface,
+      '--surface-2':   theme.surface2,
+      '--hover':       theme.hover,
+      '--border':      theme.border,
+      '--border-md':   theme.borderMd,
+      '--border-hi':   theme.borderHi,
+      '--text-1':      theme.text1,
+      '--text-2':      theme.text2,
+      '--text-3':      theme.text3,
+      '--accent':      theme.accent,
+      '--accent-soft': theme.accentSoft,
+      '--accent-2':    theme.accent2,
+    }
+    const root = document.documentElement
+    for (const [key, value] of Object.entries(vars)) {
+      root.style.setProperty(key, value)
+    }
+  }, [theme])
 
   return (
-    <div className="app" style={cssVars}>
+    <div className="app">
       {view === 'navigator' ? (
         <Navigator keybindings={keybindings} onOpenPreferences={() => setView('preferences')} />
       ) : (
