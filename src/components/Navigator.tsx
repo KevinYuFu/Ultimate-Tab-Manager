@@ -1,6 +1,14 @@
 import { Layers, Settings } from 'lucide-react'
-import type { Keybindings, Operation } from '../types'
+import { useEffect, useState } from 'react'
+import type { Keybindings, Operation, Tab } from '../types'
 import { displayKey } from '../utils'
+import {
+  deleteStashedTab,
+  listStashedTabs,
+  openStashedTab,
+  stashActiveTab,
+} from '../services/operations'
+import TabRow from './TabRow'
 
 const PRIMARY: { op: Operation; label: string }[] = [
   { op: 'stash',        label: 'Stash' },
@@ -22,6 +30,19 @@ type Props = {
 }
 
 export default function Navigator({ keybindings, onOpenPreferences }: Props) {
+  const [tabs, setTabs] = useState<Tab[]>([])
+
+  useEffect(() => {
+    listStashedTabs().then(setTabs)
+  }, [])
+
+  const handleStash = async () => setTabs(await stashActiveTab())
+  const handleDelete = async (id: string) => setTabs(await deleteStashedTab(id))
+  const handleOpen = (tab: Tab) => openStashedTab(tab)
+
+  // Only 'stash' is wired in P1. Others land with their features (P2+).
+  const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
+
   return (
     <div className="nav-view">
 
@@ -29,7 +50,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         <span className="nav-logo">UTM</span>
         <div className="nav-header-right">
           {PRIMARY.map(({ op, label }) => (
-            <button key={op} className="header-action-btn">
+            <button
+              key={op}
+              className="header-action-btn"
+              onClick={handlers[op]}
+              disabled={!handlers[op]}
+            >
               <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
               <span>{label}</span>
             </button>
@@ -42,11 +68,19 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       </header>
 
       <div className="navigator-area">
-        <div className="empty-state">
-          <Layers size={36} className="empty-icon" strokeWidth={1.25} />
-          <p className="empty-title">No stashed tabs</p>
-          <p className="empty-hint">Stash a tab to get started</p>
-        </div>
+        {tabs.length === 0 ? (
+          <div className="empty-state">
+            <Layers size={36} className="empty-icon" strokeWidth={1.25} />
+            <p className="empty-title">No stashed tabs</p>
+            <p className="empty-hint">Stash a tab to get started</p>
+          </div>
+        ) : (
+          <div className="tab-list">
+            {tabs.map(tab => (
+              <TabRow key={tab.id} tab={tab} onOpen={handleOpen} onDelete={handleDelete} />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="action-bar">
