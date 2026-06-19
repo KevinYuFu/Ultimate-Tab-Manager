@@ -1,5 +1,5 @@
 import { Layers, Settings } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
 import { displayKey } from '../utils'
 import {
@@ -31,14 +31,68 @@ type Props = {
 
 export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const anchorRef = useRef<string | null>(null)
 
   useEffect(() => {
     listStashedTabs().then(setTabs)
   }, [])
 
+  // Enter opens every selected tab.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && selectedIds.size > 0) {
+        e.preventDefault()
+        tabs.filter(t => selectedIds.has(t.id)).forEach(openStashedTab)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedIds, tabs])
+
   const handleStash = async () => setTabs(await stashActiveTab())
-  const handleDelete = async (id: string) => setTabs(await deleteStashedTab(id))
+
+  const handleDelete = async (id: string) => {
+    setTabs(await deleteStashedTab(id))
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
   const handleOpen = (tab: Tab) => openStashedTab(tab)
+
+  const handleSelect = (tab: Tab, e: React.MouseEvent) => {
+    const id = tab.id
+
+    // Shift: range-select from the anchor to the clicked tab.
+    if (e.shiftKey && anchorRef.current) {
+      const anchorIdx = tabs.findIndex(t => t.id === anchorRef.current)
+      const clickedIdx = tabs.findIndex(t => t.id === id)
+      if (anchorIdx !== -1 && clickedIdx !== -1) {
+        const [lo, hi] = anchorIdx < clickedIdx ? [anchorIdx, clickedIdx] : [clickedIdx, anchorIdx]
+        setSelectedIds(new Set(tabs.slice(lo, hi + 1).map(t => t.id)))
+        return
+      }
+    }
+
+    // Cmd/Ctrl: toggle the clicked tab in the selection.
+    if (e.ctrlKey || e.metaKey) {
+      setSelectedIds(prev => {
+        const next = new Set(prev)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        return next
+      })
+      anchorRef.current = id
+      return
+    }
+
+    // Plain click: select only this tab.
+    setSelectedIds(new Set([id]))
+    anchorRef.current = id
+  }
 
   // Only 'stash' is wired in P1. Others land with their features (P2+).
   const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
@@ -77,7 +131,14 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         ) : (
           <div className="tab-list">
             {tabs.map(tab => (
-              <TabRow key={tab.id} tab={tab} onOpen={handleOpen} onDelete={handleDelete} />
+              <TabRow
+                key={tab.id}
+                tab={tab}
+                selected={selectedIds.has(tab.id)}
+                onSelect={handleSelect}
+                onOpen={handleOpen}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
