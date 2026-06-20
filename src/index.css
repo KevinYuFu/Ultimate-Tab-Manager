@@ -161,9 +161,15 @@ body {
   padding: 8px 10px;
   border-radius: 7px;
   cursor: pointer;
+  user-select: none;
   transition: background 0.08s;
 }
 .tab-row:hover { background: var(--hover); }
+.tab-row.selected,
+.tab-row.selected:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
 
 .tab-favicon {
   width: 16px;

@@ -4,6 +4,8 @@ import type { Tab } from '../types'
 
 type Props = {
   tab: Tab
+  selected: boolean
+  onSelect: (tab: Tab, e: React.MouseEvent) => void
   onOpen: (tab: Tab) => void
   onDelete: (id: string) => void
 }
@@ -16,12 +18,17 @@ function hostname(url: string): string {
   }
 }
 
-export default function TabRow({ tab, onOpen, onDelete }: Props) {
+export default function TabRow({ tab, selected, onSelect, onOpen, onDelete }: Props) {
   const [faviconError, setFaviconError] = useState(false)
   const showFavicon = tab.favicon && !faviconError
 
   return (
-    <div className="tab-row" onClick={() => onOpen(tab)} title={tab.url}>
+    <div
+      className={`tab-row${selected ? ' selected' : ''}`}
+      onClick={(e) => onSelect(tab, e)}
+      onDoubleClick={() => onOpen(tab)}
+      title={tab.url}
+    >
       {showFavicon ? (
         <img
           className="tab-favicon"
