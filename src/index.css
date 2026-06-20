@@ -201,7 +201,17 @@ body {
   text-overflow: ellipsis;
 }
 
-.tab-delete-btn {
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.tab-row:hover .tab-actions { opacity: 1; }
+
+.tab-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,14 +222,25 @@ body {
   background: none;
   color: var(--text-3);
   cursor: pointer;
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.1s, color 0.1s, background 0.1s;
+  transition: color 0.1s, background 0.1s;
 }
-.tab-row:hover .tab-delete-btn { opacity: 1; }
-.tab-delete-btn:hover {
+.tab-icon-btn:hover {
   color: var(--text-1);
   background: var(--surface-2);
+}
+
+.tab-name-input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
 }
 
 /* Empty state */

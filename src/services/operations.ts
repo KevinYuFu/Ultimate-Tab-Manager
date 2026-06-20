@@ -36,6 +36,13 @@ export async function openStashedTab(tab: Tab): Promise<void> {
   await openUrl(tab.url)
 }
 
+export async function renameStashedTab(id: string, name: string): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  const updated = tabs.map(t => (t.id === id ? { ...t, name } : t))
+  await saveStashedTabs(updated)
+  return updated
+}
+
 export async function deleteStashedTab(id: string): Promise<Tab[]> {
   const tabs = await getStashedTabs()
   const updated = tabs.filter(t => t.id !== id)
