@@ -1,11 +1,12 @@
 import { Layers, Settings } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
-import { displayKey } from '../utils'
+import { captureKey, displayKey } from '../utils'
 import {
   deleteStashedTab,
   listStashedTabs,
   openStashedTab,
+  renameStashedTab,
   stashActiveTab,
 } from '../services/operations'
 import TabRow from './TabRow'
@@ -32,23 +33,33 @@ type Props = {
 export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [editingId, setEditingId] = useState<string | null>(null)
   const anchorRef = useRef<string | null>(null)
 
   useEffect(() => {
     listStashedTabs().then(setTabs)
   }, [])
 
-  // Enter opens every selected tab.
+  // Keyboard: open selected tabs (open binding), edit selected tab (editName).
+  // While an inline edit is active, the input handles its own keys.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && selectedIds.size > 0) {
+      if (editingId) return
+      const combo = captureKey(e)
+      if (!combo) return
+
+      if (combo === keybindings.open && selectedIds.size > 0) {
         e.preventDefault()
         tabs.filter(t => selectedIds.has(t.id)).forEach(openStashedTab)
+      } else if (combo === keybindings.editName && selectedIds.size === 1) {
+        e.preventDefault()
+        const [id] = [...selectedIds]
+        setEditingId(id)
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedIds, tabs])
+  }, [selectedIds, tabs, editingId, keybindings])
 
   const handleStash = async () => setTabs(await stashActiveTab())
 
@@ -62,6 +73,15 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   }
 
   const handleOpen = (tab: Tab) => openStashedTab(tab)
+
+  const handleStartEdit = (id: string) => setEditingId(id)
+  const handleCancelEdit = () => setEditingId(null)
+  const handleCommitEdit = async (id: string, name: string) => {
+    setEditingId(null)
+    const trimmed = name.trim()
+    if (!trimmed) return // ignore empty names; keep the existing one
+    setTabs(await renameStashedTab(id, trimmed))
+  }
 
   const clearSelection = () => {
     setSelectedIds(new Set())
@@ -142,9 +162,13 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
                 key={tab.id}
                 tab={tab}
                 selected={selectedIds.has(tab.id)}
+                editing={editingId === tab.id}
                 onSelect={handleSelect}
                 onOpen={handleOpen}
                 onDelete={handleDelete}
+                onStartEdit={handleStartEdit}
+                onCommitEdit={handleCommitEdit}
+                onCancelEdit={handleCancelEdit}
               />
             ))}
           </div>
