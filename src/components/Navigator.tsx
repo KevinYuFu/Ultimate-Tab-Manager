@@ -145,16 +145,17 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     )
   }
 
-  const handleDrop = async (_id: string, e: React.DragEvent) => {
+  // Accept the drop (prevents the snap-back animation); the reorder is committed
+  // in handleDragEnd, which fires on every release — even when the cursor
+  // overshoots onto a non-row element. To cancel, drag back to the start.
+  const handleDrop = (_id: string, e: React.DragEvent) => {
     e.preventDefault()
+  }
+
+  const handleDragEnd = async () => {
     if (draggingId && dropTarget) {
       setTabs(await reorderTabs(draggingId, dropTarget.id, dropTarget.after))
     }
-    setDraggingId(null)
-    setDropTarget(null)
-  }
-
-  const handleDragEnd = () => {
     setDraggingId(null)
     setDropTarget(null)
   }
