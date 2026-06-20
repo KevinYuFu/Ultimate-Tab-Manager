@@ -1,5 +1,5 @@
 import { Layers, Settings } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
 import {
@@ -162,6 +162,18 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   // Only 'stash' is wired in P1. Others land with their features (P2+).
   const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
 
+  // Gap (between rows) where the dragged tab would land. null = hidden,
+  // including when the drop wouldn't move the tab from its current spot.
+  let dropGap: number | null = null
+  if (dropTarget) {
+    const targetIdx = tabs.findIndex(t => t.id === dropTarget.id)
+    const draggingIdx = draggingId ? tabs.findIndex(t => t.id === draggingId) : -1
+    if (targetIdx !== -1) {
+      const gap = dropTarget.after ? targetIdx + 1 : targetIdx
+      if (gap !== draggingIdx && gap !== draggingIdx + 1) dropGap = gap
+    }
+  }
+
   return (
     <div className="nav-view">
 
@@ -195,27 +207,28 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           </div>
         ) : (
           <div className="tab-list">
-            {tabs.map(tab => (
-              <TabRow
-                key={tab.id}
-                tab={tab}
-                selected={selectedIds.has(tab.id)}
-                editing={editingId === tab.id}
-                dragging={draggingId === tab.id}
-                dropBefore={dropTarget?.id === tab.id && !dropTarget.after}
-                dropAfter={dropTarget?.id === tab.id && dropTarget.after}
-                onSelect={handleSelect}
-                onOpen={handleOpen}
-                onDelete={handleDelete}
-                onStartEdit={handleStartEdit}
-                onCommitEdit={handleCommitEdit}
-                onCancelEdit={handleCancelEdit}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-                onDragEnd={handleDragEnd}
-              />
+            {tabs.map((tab, i) => (
+              <Fragment key={tab.id}>
+                {dropGap === i && <div className="drop-line" />}
+                <TabRow
+                  tab={tab}
+                  selected={selectedIds.has(tab.id)}
+                  editing={editingId === tab.id}
+                  dragging={draggingId === tab.id}
+                  onSelect={handleSelect}
+                  onOpen={handleOpen}
+                  onDelete={handleDelete}
+                  onStartEdit={handleStartEdit}
+                  onCommitEdit={handleCommitEdit}
+                  onCancelEdit={handleCancelEdit}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                />
+              </Fragment>
             ))}
+            {dropGap === tabs.length && <div className="drop-line" />}
           </div>
         )}
       </div>

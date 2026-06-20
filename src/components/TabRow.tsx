@@ -7,8 +7,6 @@ type Props = {
   selected: boolean
   editing: boolean
   dragging: boolean
-  dropBefore: boolean
-  dropAfter: boolean
   onSelect: (tab: Tab, e: React.MouseEvent) => void
   onOpen: (tab: Tab) => void
   onDelete: (id: string) => void
@@ -34,8 +32,6 @@ export default function TabRow({
   selected,
   editing,
   dragging,
-  dropBefore,
-  dropAfter,
   onSelect,
   onOpen,
   onDelete,
@@ -51,13 +47,7 @@ export default function TabRow({
   const cancelledRef = useRef(false)
   const showFavicon = tab.favicon && !faviconError
 
-  const className = [
-    'tab-row',
-    selected && 'selected',
-    dragging && 'dragging',
-    dropBefore && 'drop-before',
-    dropAfter && 'drop-after',
-  ]
+  const className = ['tab-row', selected && 'selected', dragging && 'dragging']
     .filter(Boolean)
     .join(' ')
 
