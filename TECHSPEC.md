@@ -43,6 +43,7 @@ The primary user likely multiple tasks a lot of bounces around many different co
 | P2 | Edit Tabs | Can edit the names of tabs |
 | P3 | Add Bins | A bin is a folder for tabs. Make the UI act like a file manager where new bins can be added, bins can be opened and closed like a drop down displaying the contents within |
 | P4 | Multie Stash & Open| Can stash all tabs in a chrome session, saving them into a bin title the date-time. Can select multiple tabs and open them all at once. |
+| P5 | Fuzzy Find and Organize | Enable fuzzy find when saving and searching for tabs. When saving a tab, the bin-select field is already in focus and can fuzzy find for a specific bin or create new bin. Add Search for url feature and fuzzy find urls or bins. |
 
 ---
 
