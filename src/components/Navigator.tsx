@@ -127,6 +127,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   // ── Drag and drop: reorder the tab list ──
   const handleDragStart = (id: string, e: React.DragEvent) => {
     setDraggingId(id)
+    clearSelection()
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', id)
   }
