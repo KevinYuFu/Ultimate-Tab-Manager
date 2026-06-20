@@ -7,6 +7,7 @@ import {
   listStashedTabs,
   openStashedTab,
   renameStashedTab,
+  reorderTabs,
   stashActiveTab,
 } from '../services/operations'
 import TabRow from './TabRow'
@@ -34,6 +35,8 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null)
   const anchorRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -121,6 +124,41 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     anchorRef.current = id
   }
 
+  // ── Drag and drop: reorder the tab list ──
+  const handleDragStart = (id: string, e: React.DragEvent) => {
+    setDraggingId(id)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+  }
+
+  const handleDragOver = (id: string, e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (id === draggingId) {
+      setDropTarget(null)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const after = e.clientY > rect.top + rect.height / 2
+    setDropTarget(prev =>
+      prev && prev.id === id && prev.after === after ? prev : { id, after },
+    )
+  }
+
+  const handleDrop = async (_id: string, e: React.DragEvent) => {
+    e.preventDefault()
+    if (draggingId && dropTarget) {
+      setTabs(await reorderTabs(draggingId, dropTarget.id, dropTarget.after))
+    }
+    setDraggingId(null)
+    setDropTarget(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingId(null)
+    setDropTarget(null)
+  }
+
   // Only 'stash' is wired in P1. Others land with their features (P2+).
   const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
 
@@ -163,12 +201,19 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
                 tab={tab}
                 selected={selectedIds.has(tab.id)}
                 editing={editingId === tab.id}
+                dragging={draggingId === tab.id}
+                dropBefore={dropTarget?.id === tab.id && !dropTarget.after}
+                dropAfter={dropTarget?.id === tab.id && dropTarget.after}
                 onSelect={handleSelect}
                 onOpen={handleOpen}
                 onDelete={handleDelete}
                 onStartEdit={handleStartEdit}
                 onCommitEdit={handleCommitEdit}
                 onCancelEdit={handleCancelEdit}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
               />
             ))}
           </div>
