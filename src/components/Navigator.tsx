@@ -3,13 +3,21 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
 import {
+  createBin,
+  deleteBin,
   deleteStashedTab,
+  listBins,
   listStashedTabs,
+  moveBin,
+  moveTabToBin,
   openStashedTab,
+  renameBin,
   renameStashedTab,
   reorderTabs,
   stashActiveTab,
 } from '../services/operations'
+import type { Bin } from '../types'
+import BinRow from './BinRow'
 import TabRow from './TabRow'
 
 const PRIMARY: { op: Operation; label: string }[] = [
@@ -26,6 +34,14 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'undo',         label: 'Undo' },
 ]
 
+type Editing = { kind: 'tab' | 'bin'; id: string }
+type DragItem = { kind: 'tab' | 'bin'; id: string }
+type DropState =
+  | { kind: 'tab'; id: string; after: boolean }
+  | { kind: 'bin'; id: string }
+  | { kind: 'root' }
+  | null
+
 type Props = {
   keybindings: Keybindings
   onOpenPreferences: () => void
@@ -33,21 +49,35 @@ type Props = {
 
 export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
+  const [bins, setBins] = useState<Bin[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null)
+  const [editing, setEditing] = useState<Editing | null>(null)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [draggingItem, setDraggingItem] = useState<DragItem | null>(null)
+  const [dropState, setDropState] = useState<DropState>(null)
   const anchorRef = useRef<string | null>(null)
 
+  const refresh = async () => {
+    const [t, b] = await Promise.all([listStashedTabs(), listBins()])
+    setTabs(t)
+    setBins(b)
+  }
+
   useEffect(() => {
-    listStashedTabs().then(setTabs)
+    refresh()
   }, [])
 
-  // Keyboard: open selected tabs (open binding), edit selected tab (editName).
-  // While an inline edit is active, the input handles its own keys.
+  const handleNewBin = async () => {
+    const bin = await createBin(null)
+    await refresh()
+    setExpanded(prev => new Set(prev).add(bin.id))
+    setEditing({ kind: 'bin', id: bin.id })
+  }
+
+  // Keyboard: open selected tabs, edit selected tab, create a bin.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (editingId) return
+      if (editing) return
       const combo = captureKey(e)
       if (!combo) return
 
@@ -57,17 +87,25 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       } else if (combo === keybindings.editName && selectedIds.size === 1) {
         e.preventDefault()
         const [id] = [...selectedIds]
-        setEditingId(id)
+        setEditing({ kind: 'tab', id })
+      } else if (combo === keybindings.newBin) {
+        e.preventDefault()
+        handleNewBin()
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedIds, tabs, editingId, keybindings])
+  }, [selectedIds, tabs, editing, keybindings])
 
-  const handleStash = async () => setTabs(await stashActiveTab())
+  const handleStash = async () => {
+    await stashActiveTab()
+    await refresh()
+  }
 
-  const handleDelete = async (id: string) => {
-    setTabs(await deleteStashedTab(id))
+  // ── Tab handlers ──
+  const handleDeleteTab = async (id: string) => {
+    await deleteStashedTab(id)
+    await refresh()
     setSelectedIds(prev => {
       const next = new Set(prev)
       next.delete(id)
@@ -77,37 +115,60 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   const handleOpen = (tab: Tab) => openStashedTab(tab)
 
-  const handleStartEdit = (id: string) => setEditingId(id)
-  const handleCancelEdit = () => setEditingId(null)
-  const handleCommitEdit = async (id: string, name: string) => {
-    setEditingId(null)
+  const handleCommitTabEdit = async (id: string, name: string) => {
+    setEditing(null)
     const trimmed = name.trim()
-    if (!trimmed) return // ignore empty names; keep the existing one
-    setTabs(await renameStashedTab(id, trimmed))
+    if (!trimmed) return
+    await renameStashedTab(id, trimmed)
+    await refresh()
   }
 
+  // ── Bin handlers ──
+  const handleToggle = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const handleDeleteBin = async (id: string) => {
+    await deleteBin(id)
+    await refresh()
+  }
+
+  const handleCommitBinEdit = async (id: string, name: string) => {
+    setEditing(null)
+    const trimmed = name.trim()
+    if (!trimmed) return
+    await renameBin(id, trimmed)
+    await refresh()
+  }
+
+  const cancelEdit = () => setEditing(null)
+
+  // ── Selection (tabs only) ──
   const clearSelection = () => {
     setSelectedIds(new Set())
     anchorRef.current = null
   }
 
   const handleSelect = (tab: Tab, e: React.MouseEvent) => {
-    // Don't let the click reach the background handler that clears selection.
     e.stopPropagation()
     const id = tab.id
 
-    // Shift: range-select from the anchor to the clicked tab.
     if (e.shiftKey && anchorRef.current) {
-      const anchorIdx = tabs.findIndex(t => t.id === anchorRef.current)
-      const clickedIdx = tabs.findIndex(t => t.id === id)
+      const flat = tabs.map(t => t.id)
+      const anchorIdx = flat.indexOf(anchorRef.current)
+      const clickedIdx = flat.indexOf(id)
       if (anchorIdx !== -1 && clickedIdx !== -1) {
         const [lo, hi] = anchorIdx < clickedIdx ? [anchorIdx, clickedIdx] : [clickedIdx, anchorIdx]
-        setSelectedIds(new Set(tabs.slice(lo, hi + 1).map(t => t.id)))
+        setSelectedIds(new Set(flat.slice(lo, hi + 1)))
         return
       }
     }
 
-    // Cmd/Ctrl: toggle the clicked tab in the selection.
     if (e.ctrlKey || e.metaKey) {
       setSelectedIds(prev => {
         const next = new Set(prev)
@@ -119,76 +180,145 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       return
     }
 
-    // Plain click: select only this tab.
     setSelectedIds(new Set([id]))
     anchorRef.current = id
   }
 
-  // ── Drag and drop: reorder the tab list ──
-  const handleDragStart = (id: string, e: React.DragEvent) => {
-    setDraggingId(id)
-    clearSelection()
+  // ── Drag and drop ──
+  const handleDragStart = (kind: 'tab' | 'bin', id: string, e: React.DragEvent) => {
+    setDraggingItem({ kind, id })
+    if (kind === 'tab') clearSelection()
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', id)
   }
 
-  const handleDragOver = (id: string, e: React.DragEvent) => {
+  const handleTabDragOver = (tabId: string, e: React.DragEvent) => {
+    if (!draggingItem || draggingItem.kind !== 'tab') return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (id === draggingId) {
-      setDropTarget(null)
+    if (tabId === draggingItem.id) {
+      setDropState(null)
       return
     }
     const rect = e.currentTarget.getBoundingClientRect()
     const after = e.clientY > rect.top + rect.height / 2
-    setDropTarget(prev =>
-      prev && prev.id === id && prev.after === after ? prev : { id, after },
+    setDropState({ kind: 'tab', id: tabId, after })
+  }
+
+  const handleBinDragOver = (binId: string, e: React.DragEvent) => {
+    if (!draggingItem) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (draggingItem.kind === 'bin' && draggingItem.id === binId) {
+      setDropState(null)
+      return
+    }
+    setDropState({ kind: 'bin', id: binId })
+  }
+
+  const handleRootDragOver = (e: React.DragEvent) => {
+    if (!draggingItem || e.target !== e.currentTarget) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDropState({ kind: 'root' })
+  }
+
+  // Accept the drop anywhere in the popup (avoids the slow snap-back animation).
+  const handleViewDragOver = (e: React.DragEvent) => {
+    if (draggingItem) e.preventDefault()
+  }
+  const handleItemDrop = (e: React.DragEvent) => {
+    if (draggingItem) e.preventDefault()
+  }
+
+  // Commit on drag end so releasing anywhere (even off a row) applies the move.
+  const handleDragEnd = async () => {
+    const item = draggingItem
+    const drop = dropState
+    setDraggingItem(null)
+    setDropState(null)
+    if (!item || !drop) return
+
+    if (item.kind === 'tab') {
+      if (drop.kind === 'bin') await moveTabToBin(item.id, drop.id)
+      else if (drop.kind === 'tab') await reorderTabs(item.id, drop.id, drop.after)
+      else if (drop.kind === 'root') await moveTabToBin(item.id, null)
+    } else {
+      if (drop.kind === 'bin') await moveBin(item.id, drop.id)
+      else if (drop.kind === 'root') await moveBin(item.id, null)
+    }
+    await refresh()
+  }
+
+  const handlers: Partial<Record<Operation, () => void>> = {
+    stash: handleStash,
+    newBin: handleNewBin,
+  }
+
+  // ── Recursive tree render ──
+  const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
+    const childBins = bins.filter(b => b.parentId === parentId)
+    const childTabs = tabs.filter(t => t.binId === parentId)
+    return (
+      <>
+        {childBins.map(bin => (
+          <Fragment key={bin.id}>
+            <BinRow
+              bin={bin}
+              depth={depth}
+              expanded={expanded.has(bin.id)}
+              editing={editing?.kind === 'bin' && editing.id === bin.id}
+              dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
+              dragging={draggingItem?.kind === 'bin' && draggingItem.id === bin.id}
+              onToggle={handleToggle}
+              onStartEdit={id => setEditing({ kind: 'bin', id })}
+              onCommitEdit={handleCommitBinEdit}
+              onCancelEdit={cancelEdit}
+              onDelete={handleDeleteBin}
+              onDragStart={(id, e) => handleDragStart('bin', id, e)}
+              onDragOver={handleBinDragOver}
+              onDrop={(_id, e) => handleItemDrop(e)}
+              onDragEnd={handleDragEnd}
+            />
+            {expanded.has(bin.id) && renderLevel(bin.id, depth + 1)}
+          </Fragment>
+        ))}
+        {childTabs.map(tab => {
+          const dropBefore = dropState?.kind === 'tab' && dropState.id === tab.id && !dropState.after
+          const dropAfter = dropState?.kind === 'tab' && dropState.id === tab.id && dropState.after
+          const lineStyle = { marginLeft: depth * 16 + 6 }
+          return (
+            <Fragment key={tab.id}>
+              {dropBefore && <div className="drop-line" style={lineStyle} />}
+              <TabRow
+                tab={tab}
+                depth={depth}
+                selected={selectedIds.has(tab.id)}
+                editing={editing?.kind === 'tab' && editing.id === tab.id}
+                dragging={draggingItem?.kind === 'tab' && draggingItem.id === tab.id}
+                onSelect={handleSelect}
+                onOpen={handleOpen}
+                onDelete={handleDeleteTab}
+                onStartEdit={id => setEditing({ kind: 'tab', id })}
+                onCommitEdit={handleCommitTabEdit}
+                onCancelEdit={cancelEdit}
+                onDragStart={(id, e) => handleDragStart('tab', id, e)}
+                onDragOver={handleTabDragOver}
+                onDrop={(_id, e) => handleItemDrop(e)}
+                onDragEnd={handleDragEnd}
+              />
+              {dropAfter && <div className="drop-line" style={lineStyle} />}
+            </Fragment>
+          )
+        })}
+      </>
     )
   }
 
-  // Accept the drop (prevents the snap-back animation); the reorder is committed
-  // in handleDragEnd, which fires on every release — even when the cursor
-  // overshoots onto a non-row element. To cancel, drag back to the start.
-  const handleDrop = (_id: string, e: React.DragEvent) => {
-    e.preventDefault()
-  }
-
-  const handleDragEnd = async () => {
-    if (draggingId && dropTarget) {
-      setTabs(await reorderTabs(draggingId, dropTarget.id, dropTarget.after))
-    }
-    setDraggingId(null)
-    setDropTarget(null)
-  }
-
-  // Accept the drop anywhere in the popup during a tab drag. Without this, a
-  // release over a non-row spot (header, empty space, status bar) is treated as
-  // a failed drop, which triggers the slow snap-back animation and delays
-  // dragEnd. Accepting it everywhere keeps the reorder instant.
-  const handleViewDragOver = (e: React.DragEvent) => {
-    if (draggingId) e.preventDefault()
-  }
-  const handleViewDrop = (e: React.DragEvent) => {
-    if (draggingId) e.preventDefault()
-  }
-
-  // Only 'stash' is wired in P1. Others land with their features (P2+).
-  const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
-
-  // Gap (between rows) where the dragged tab would land. null = hidden,
-  // including when the drop wouldn't move the tab from its current spot.
-  let dropGap: number | null = null
-  if (dropTarget) {
-    const targetIdx = tabs.findIndex(t => t.id === dropTarget.id)
-    const draggingIdx = draggingId ? tabs.findIndex(t => t.id === draggingId) : -1
-    if (targetIdx !== -1) {
-      const gap = dropTarget.after ? targetIdx + 1 : targetIdx
-      if (gap !== draggingIdx && gap !== draggingIdx + 1) dropGap = gap
-    }
-  }
+  const isEmpty = tabs.length === 0 && bins.length === 0
 
   return (
-    <div className="nav-view" onDragOver={handleViewDragOver} onDrop={handleViewDrop}>
+    <div className="nav-view" onDragOver={handleViewDragOver} onDrop={handleItemDrop}>
 
       <header className="nav-header">
         <span className="nav-logo">UTM</span>
@@ -211,44 +341,26 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         </div>
       </header>
 
-      <div className="navigator-area" onClick={clearSelection}>
-        {tabs.length === 0 ? (
+      <div
+        className={`navigator-area${dropState?.kind === 'root' ? ' drop-root' : ''}`}
+        onClick={clearSelection}
+        onDragOver={handleRootDragOver}
+        onDrop={(e) => handleItemDrop(e)}
+      >
+        {isEmpty ? (
           <div className="empty-state">
             <Layers size={36} className="empty-icon" strokeWidth={1.25} />
             <p className="empty-title">No stashed tabs</p>
             <p className="empty-hint">Stash a tab to get started</p>
           </div>
         ) : (
-          <div className="tab-list">
-            {tabs.map((tab, i) => (
-              <Fragment key={tab.id}>
-                {dropGap === i && <div className="drop-line" />}
-                <TabRow
-                  tab={tab}
-                  selected={selectedIds.has(tab.id)}
-                  editing={editingId === tab.id}
-                  dragging={draggingId === tab.id}
-                  onSelect={handleSelect}
-                  onOpen={handleOpen}
-                  onDelete={handleDelete}
-                  onStartEdit={handleStartEdit}
-                  onCommitEdit={handleCommitEdit}
-                  onCancelEdit={handleCancelEdit}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                />
-              </Fragment>
-            ))}
-            {dropGap === tabs.length && <div className="drop-line" />}
-          </div>
+          <div className="tab-list">{renderLevel(null, 0)}</div>
         )}
       </div>
 
       <div className="action-bar">
         {SECONDARY.map(({ op, label }) => (
-          <button key={op} className="action-btn">
+          <button key={op} className="action-btn" onClick={handlers[op]}>
             <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
             <span>{label}</span>
           </button>

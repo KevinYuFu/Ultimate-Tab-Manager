@@ -1,13 +1,22 @@
 // Higher-level operations that compose the tabs + storage + naming services.
 // Components call these; they never touch the chrome APIs directly.
 
-import type { Tab } from '../types'
-import { getStashedTabs, saveStashedTabs } from './storage'
+import type { Bin, Tab } from '../types'
+import {
+  getBins,
+  getStashedTabs,
+  saveBins,
+  saveStashedTabs,
+} from './storage'
 import { closeTab, getActiveTab, openUrl } from './tabs'
 import { smartName } from './smartName'
 
 export async function listStashedTabs(): Promise<Tab[]> {
   return getStashedTabs()
+}
+
+export async function listBins(): Promise<Bin[]> {
+  return getBins()
 }
 
 // Stash the active tab: save it first, then close it (so an interrupted
@@ -50,7 +59,7 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
   return updated
 }
 
-// Move a dragged tab to just before/after a target tab. Returns the new order.
+// Reorder a tab relative to a sibling, adopting that sibling's bin.
 export async function reorderTabs(
   draggedId: string,
   targetId: string,
@@ -59,14 +68,79 @@ export async function reorderTabs(
   const tabs = await getStashedTabs()
   if (draggedId === targetId) return tabs
   const dragged = tabs.find(t => t.id === draggedId)
-  if (!dragged) return tabs
+  const target = tabs.find(t => t.id === targetId)
+  if (!dragged || !target) return tabs
 
+  const moved: Tab = { ...dragged, binId: target.binId }
   const rest = tabs.filter(t => t.id !== draggedId)
   let idx = rest.findIndex(t => t.id === targetId)
   if (idx === -1) return tabs
   if (placeAfter) idx += 1
 
-  rest.splice(idx, 0, dragged)
+  rest.splice(idx, 0, moved)
   await saveStashedTabs(rest)
   return rest
+}
+
+// Move a tab into a bin (or to root when binId is null), placed at the end.
+export async function moveTabToBin(tabId: string, binId: string | null): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  const dragged = tabs.find(t => t.id === tabId)
+  if (!dragged || dragged.binId === binId) return tabs
+
+  const rest = tabs.filter(t => t.id !== tabId)
+  rest.push({ ...dragged, binId })
+  await saveStashedTabs(rest)
+  return rest
+}
+
+// ── Bins ──
+
+export async function createBin(parentId: string | null): Promise<Bin> {
+  const bins = await getBins()
+  const bin: Bin = { id: crypto.randomUUID(), name: 'New Bin', parentId }
+  await saveBins([...bins, bin])
+  return bin
+}
+
+export async function renameBin(id: string, name: string): Promise<Bin[]> {
+  const bins = await getBins()
+  const updated = bins.map(b => (b.id === id ? { ...b, name } : b))
+  await saveBins(updated)
+  return updated
+}
+
+// Delete a bin, moving its child bins and tabs up to its parent (no data loss).
+export async function deleteBin(id: string): Promise<void> {
+  const bins = await getBins()
+  const tabs = await getStashedTabs()
+  const target = bins.find(b => b.id === id)
+  const newParent = target ? target.parentId : null
+
+  await saveBins(
+    bins
+      .filter(b => b.id !== id)
+      .map(b => (b.parentId === id ? { ...b, parentId: newParent } : b)),
+  )
+  await saveStashedTabs(
+    tabs.map(t => (t.binId === id ? { ...t, binId: newParent } : t)),
+  )
+}
+
+// Nest a bin under newParentId (or root when null), rejecting cycles.
+export async function moveBin(binId: string, newParentId: string | null): Promise<Bin[]> {
+  const bins = await getBins()
+  if (binId === newParentId) return bins
+
+  // Walk up from the destination; if we reach the bin being moved, it's a cycle.
+  const byId = new Map(bins.map(b => [b.id, b]))
+  let cursor = newParentId
+  while (cursor) {
+    if (cursor === binId) return bins
+    cursor = byId.get(cursor)?.parentId ?? null
+  }
+
+  const updated = bins.map(b => (b.id === binId ? { ...b, parentId: newParentId } : b))
+  await saveBins(updated)
+  return updated
 }

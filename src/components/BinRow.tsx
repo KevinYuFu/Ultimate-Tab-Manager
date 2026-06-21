@@ -1,55 +1,45 @@
-import { Globe, Pencil, Trash2 } from 'lucide-react'
-import { useRef, useState } from 'react'
-import type { Tab } from '../types'
+import { ChevronDown, ChevronRight, Folder, Pencil, Trash2 } from 'lucide-react'
+import { useRef } from 'react'
+import type { Bin } from '../types'
 
 type Props = {
-  tab: Tab
+  bin: Bin
   depth: number
-  selected: boolean
+  expanded: boolean
   editing: boolean
+  dropInto: boolean
   dragging: boolean
-  onSelect: (tab: Tab, e: React.MouseEvent) => void
-  onOpen: (tab: Tab) => void
-  onDelete: (id: string) => void
+  onToggle: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
+  onDelete: (id: string) => void
   onDragStart: (id: string, e: React.DragEvent) => void
   onDragOver: (id: string, e: React.DragEvent) => void
   onDrop: (id: string, e: React.DragEvent) => void
   onDragEnd: () => void
 }
 
-function hostname(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return ''
-  }
-}
-
-export default function TabRow({
-  tab,
+export default function BinRow({
+  bin,
   depth,
-  selected,
+  expanded,
   editing,
+  dropInto,
   dragging,
-  onSelect,
-  onOpen,
-  onDelete,
+  onToggle,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
+  onDelete,
   onDragStart,
   onDragOver,
   onDrop,
   onDragEnd,
 }: Props) {
-  const [faviconError, setFaviconError] = useState(false)
   const cancelledRef = useRef(false)
-  const showFavicon = tab.favicon && !faviconError
 
-  const className = ['tab-row', selected && 'selected', dragging && 'dragging']
+  const className = ['bin-row', dropInto && 'drop-into', dragging && 'dragging']
     .filter(Boolean)
     .join(' ')
 
@@ -58,33 +48,24 @@ export default function TabRow({
       className={className}
       style={{ paddingLeft: depth * 16 + 10 }}
       draggable={!editing}
-      onClick={(e) => onSelect(tab, e)}
-      onDoubleClick={() => onOpen(tab)}
-      onDragStart={(e) => onDragStart(tab.id, e)}
-      onDragOver={(e) => onDragOver(tab.id, e)}
-      onDrop={(e) => onDrop(tab.id, e)}
+      onClick={() => !editing && onToggle(bin.id)}
+      onDragStart={(e) => onDragStart(bin.id, e)}
+      onDragOver={(e) => onDragOver(bin.id, e)}
+      onDrop={(e) => onDrop(bin.id, e)}
       onDragEnd={onDragEnd}
-      title={tab.url}
     >
-      {showFavicon ? (
-        <img
-          className="tab-favicon"
-          src={tab.favicon}
-          alt=""
-          onError={() => setFaviconError(true)}
-        />
-      ) : (
-        <Globe className="tab-favicon-fallback" size={16} strokeWidth={1.5} />
-      )}
+      <span className="bin-chevron">
+        {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
+      </span>
+      <Folder className="bin-icon" size={15} strokeWidth={1.75} />
 
       {editing ? (
         <input
           className="tab-name-input"
-          defaultValue={tab.name}
+          defaultValue={bin.name}
           autoFocus
           onFocus={(e) => e.target.select()}
           onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => {
             e.stopPropagation()
             if (e.key === 'Enter') {
@@ -99,31 +80,30 @@ export default function TabRow({
               cancelledRef.current = false
               onCancelEdit()
             } else {
-              onCommitEdit(tab.id, e.target.value)
+              onCommitEdit(bin.id, e.target.value)
             }
           }}
         />
       ) : (
         <>
-          <span className="tab-name">{tab.name}</span>
-          <span className="tab-host">{hostname(tab.url)}</span>
+          <span className="bin-name">{bin.name}</span>
           <div className="tab-actions">
             <button
               className="tab-icon-btn"
-              title="Edit name"
+              title="Rename bin"
               onClick={(e) => {
                 e.stopPropagation()
-                onStartEdit(tab.id)
+                onStartEdit(bin.id)
               }}
             >
               <Pencil size={13} strokeWidth={1.75} />
             </button>
             <button
               className="tab-icon-btn"
-              title="Delete"
+              title="Delete bin"
               onClick={(e) => {
                 e.stopPropagation()
-                onDelete(tab.id)
+                onDelete(bin.id)
               }}
             >
               <Trash2 size={14} strokeWidth={1.75} />
