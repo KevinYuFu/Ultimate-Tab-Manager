@@ -161,6 +161,17 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     setDropTarget(null)
   }
 
+  // Accept the drop anywhere in the popup during a tab drag. Without this, a
+  // release over a non-row spot (header, empty space, status bar) is treated as
+  // a failed drop, which triggers the slow snap-back animation and delays
+  // dragEnd. Accepting it everywhere keeps the reorder instant.
+  const handleViewDragOver = (e: React.DragEvent) => {
+    if (draggingId) e.preventDefault()
+  }
+  const handleViewDrop = (e: React.DragEvent) => {
+    if (draggingId) e.preventDefault()
+  }
+
   // Only 'stash' is wired in P1. Others land with their features (P2+).
   const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
 
@@ -177,7 +188,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   }
 
   return (
-    <div className="nav-view">
+    <div className="nav-view" onDragOver={handleViewDragOver} onDrop={handleViewDrop}>
 
       <header className="nav-header">
         <span className="nav-logo">UTM</span>
