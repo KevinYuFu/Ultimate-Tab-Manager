@@ -170,6 +170,17 @@ body {
   background: var(--accent-soft);
   box-shadow: inset 2px 0 0 var(--accent);
 }
+.tab-row.dragging {
+  opacity: 0.35;
+}
+
+.drop-line {
+  height: 2px;
+  margin: 1px 6px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
 
 .tab-favicon {
   width: 16px;

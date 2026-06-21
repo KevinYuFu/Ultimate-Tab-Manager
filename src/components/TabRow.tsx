@@ -6,12 +6,17 @@ type Props = {
   tab: Tab
   selected: boolean
   editing: boolean
+  dragging: boolean
   onSelect: (tab: Tab, e: React.MouseEvent) => void
   onOpen: (tab: Tab) => void
   onDelete: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
+  onDragStart: (id: string, e: React.DragEvent) => void
+  onDragOver: (id: string, e: React.DragEvent) => void
+  onDrop: (id: string, e: React.DragEvent) => void
+  onDragEnd: () => void
 }
 
 function hostname(url: string): string {
@@ -26,22 +31,36 @@ export default function TabRow({
   tab,
   selected,
   editing,
+  dragging,
   onSelect,
   onOpen,
   onDelete,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: Props) {
   const [faviconError, setFaviconError] = useState(false)
   const cancelledRef = useRef(false)
   const showFavicon = tab.favicon && !faviconError
 
+  const className = ['tab-row', selected && 'selected', dragging && 'dragging']
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <div
-      className={`tab-row${selected ? ' selected' : ''}`}
+      className={className}
+      draggable={!editing}
       onClick={(e) => onSelect(tab, e)}
       onDoubleClick={() => onOpen(tab)}
+      onDragStart={(e) => onDragStart(tab.id, e)}
+      onDragOver={(e) => onDragOver(tab.id, e)}
+      onDrop={(e) => onDrop(tab.id, e)}
+      onDragEnd={onDragEnd}
       title={tab.url}
     >
       {showFavicon ? (

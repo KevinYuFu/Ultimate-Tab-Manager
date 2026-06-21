@@ -1,5 +1,5 @@
 import { Layers, Settings } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
 import {
@@ -7,6 +7,7 @@ import {
   listStashedTabs,
   openStashedTab,
   renameStashedTab,
+  reorderTabs,
   stashActiveTab,
 } from '../services/operations'
 import TabRow from './TabRow'
@@ -34,6 +35,8 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null)
   const anchorRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -121,11 +124,71 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     anchorRef.current = id
   }
 
+  // ── Drag and drop: reorder the tab list ──
+  const handleDragStart = (id: string, e: React.DragEvent) => {
+    setDraggingId(id)
+    clearSelection()
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', id)
+  }
+
+  const handleDragOver = (id: string, e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (id === draggingId) {
+      setDropTarget(null)
+      return
+    }
+    const rect = e.currentTarget.getBoundingClientRect()
+    const after = e.clientY > rect.top + rect.height / 2
+    setDropTarget(prev =>
+      prev && prev.id === id && prev.after === after ? prev : { id, after },
+    )
+  }
+
+  // Accept the drop (prevents the snap-back animation); the reorder is committed
+  // in handleDragEnd, which fires on every release — even when the cursor
+  // overshoots onto a non-row element. To cancel, drag back to the start.
+  const handleDrop = (_id: string, e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDragEnd = async () => {
+    if (draggingId && dropTarget) {
+      setTabs(await reorderTabs(draggingId, dropTarget.id, dropTarget.after))
+    }
+    setDraggingId(null)
+    setDropTarget(null)
+  }
+
+  // Accept the drop anywhere in the popup during a tab drag. Without this, a
+  // release over a non-row spot (header, empty space, status bar) is treated as
+  // a failed drop, which triggers the slow snap-back animation and delays
+  // dragEnd. Accepting it everywhere keeps the reorder instant.
+  const handleViewDragOver = (e: React.DragEvent) => {
+    if (draggingId) e.preventDefault()
+  }
+  const handleViewDrop = (e: React.DragEvent) => {
+    if (draggingId) e.preventDefault()
+  }
+
   // Only 'stash' is wired in P1. Others land with their features (P2+).
   const handlers: Partial<Record<Operation, () => void>> = { stash: handleStash }
 
+  // Gap (between rows) where the dragged tab would land. null = hidden,
+  // including when the drop wouldn't move the tab from its current spot.
+  let dropGap: number | null = null
+  if (dropTarget) {
+    const targetIdx = tabs.findIndex(t => t.id === dropTarget.id)
+    const draggingIdx = draggingId ? tabs.findIndex(t => t.id === draggingId) : -1
+    if (targetIdx !== -1) {
+      const gap = dropTarget.after ? targetIdx + 1 : targetIdx
+      if (gap !== draggingIdx && gap !== draggingIdx + 1) dropGap = gap
+    }
+  }
+
   return (
-    <div className="nav-view">
+    <div className="nav-view" onDragOver={handleViewDragOver} onDrop={handleViewDrop}>
 
       <header className="nav-header">
         <span className="nav-logo">UTM</span>
@@ -157,20 +220,28 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           </div>
         ) : (
           <div className="tab-list">
-            {tabs.map(tab => (
-              <TabRow
-                key={tab.id}
-                tab={tab}
-                selected={selectedIds.has(tab.id)}
-                editing={editingId === tab.id}
-                onSelect={handleSelect}
-                onOpen={handleOpen}
-                onDelete={handleDelete}
-                onStartEdit={handleStartEdit}
-                onCommitEdit={handleCommitEdit}
-                onCancelEdit={handleCancelEdit}
-              />
+            {tabs.map((tab, i) => (
+              <Fragment key={tab.id}>
+                {dropGap === i && <div className="drop-line" />}
+                <TabRow
+                  tab={tab}
+                  selected={selectedIds.has(tab.id)}
+                  editing={editingId === tab.id}
+                  dragging={draggingId === tab.id}
+                  onSelect={handleSelect}
+                  onOpen={handleOpen}
+                  onDelete={handleDelete}
+                  onStartEdit={handleStartEdit}
+                  onCommitEdit={handleCommitEdit}
+                  onCancelEdit={handleCancelEdit}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onDragEnd={handleDragEnd}
+                />
+              </Fragment>
             ))}
+            {dropGap === tabs.length && <div className="drop-line" />}
           </div>
         )}
       </div>

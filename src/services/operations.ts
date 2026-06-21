@@ -49,3 +49,24 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
   await saveStashedTabs(updated)
   return updated
 }
+
+// Move a dragged tab to just before/after a target tab. Returns the new order.
+export async function reorderTabs(
+  draggedId: string,
+  targetId: string,
+  placeAfter: boolean,
+): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  if (draggedId === targetId) return tabs
+  const dragged = tabs.find(t => t.id === draggedId)
+  if (!dragged) return tabs
+
+  const rest = tabs.filter(t => t.id !== draggedId)
+  let idx = rest.findIndex(t => t.id === targetId)
+  if (idx === -1) return tabs
+  if (placeAfter) idx += 1
+
+  rest.splice(idx, 0, dragged)
+  await saveStashedTabs(rest)
+  return rest
+}
