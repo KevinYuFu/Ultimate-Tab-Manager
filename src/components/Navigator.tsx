@@ -289,7 +289,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
-  const renderTab = (tab: Tab, depth: number) => {
+  const renderTab = (tab: Tab, depth: number, firstInGroup = false, lastInGroup = false) => {
     const dropBefore = dropState?.kind === 'tab' && dropState.id === tab.id && !dropState.after
     const dropAfter = dropState?.kind === 'tab' && dropState.id === tab.id && dropState.after
     const lineStyle = { marginLeft: depth * 16 + 6 }
@@ -299,6 +299,8 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         <TabRow
           tab={tab}
           depth={depth}
+          firstInGroup={firstInGroup}
+          lastInGroup={lastInGroup}
           selected={selectedIds.has(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
           dragging={draggingId === tab.id}
@@ -357,28 +359,33 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           </div>
         ) : (
           <div className="tab-list">
-            {rootBins.map(bin => (
-              <Fragment key={bin.id}>
-                <BinRow
-                  bin={bin}
-                  depth={0}
-                  expanded={expanded.has(bin.id)}
-                  selected={selectedBinId === bin.id}
-                  editing={editing?.kind === 'bin' && editing.id === bin.id}
-                  dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
-                  onSelect={handleSelectBin}
-                  onOpen={handleOpenBin}
-                  onStartEdit={id => setEditing({ kind: 'bin', id })}
-                  onCommitEdit={handleCommitBinEdit}
-                  onCancelEdit={cancelEdit}
-                  onDelete={handleDeleteBin}
-                  onDragOver={handleBinDragOver}
-                  onDrop={handleItemDrop}
-                />
-                {expanded.has(bin.id) &&
-                  tabs.filter(t => t.binId === bin.id).map(t => renderTab(t, 1))}
-              </Fragment>
-            ))}
+            {rootBins.map(bin => {
+              const binTabs = tabs.filter(t => t.binId === bin.id)
+              return (
+                <Fragment key={bin.id}>
+                  <BinRow
+                    bin={bin}
+                    depth={0}
+                    expanded={expanded.has(bin.id)}
+                    selected={selectedBinId === bin.id}
+                    editing={editing?.kind === 'bin' && editing.id === bin.id}
+                    dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
+                    onSelect={handleSelectBin}
+                    onOpen={handleOpenBin}
+                    onStartEdit={id => setEditing({ kind: 'bin', id })}
+                    onCommitEdit={handleCommitBinEdit}
+                    onCancelEdit={cancelEdit}
+                    onDelete={handleDeleteBin}
+                    onDragOver={handleBinDragOver}
+                    onDrop={handleItemDrop}
+                  />
+                  {expanded.has(bin.id) &&
+                    binTabs.map((t, i) =>
+                      renderTab(t, 1, i === 0, i === binTabs.length - 1),
+                    )}
+                </Fragment>
+              )
+            })}
 
             {rootTabs.map(t => renderTab(t, 0))}
           </div>

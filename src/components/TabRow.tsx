@@ -5,6 +5,8 @@ import type { Tab } from '../types'
 type Props = {
   tab: Tab
   depth: number
+  firstInGroup: boolean
+  lastInGroup: boolean
   selected: boolean
   editing: boolean
   dragging: boolean
@@ -31,6 +33,8 @@ function hostname(url: string): string {
 export default function TabRow({
   tab,
   depth,
+  firstInGroup,
+  lastInGroup,
   selected,
   editing,
   dragging,
@@ -66,7 +70,17 @@ export default function TabRow({
       onDragEnd={onDragEnd}
       title={tab.url}
     >
-      {depth > 0 && <span className="row-guides" style={{ width: depth * 16 }} aria-hidden="true" />}
+      {depth > 0 && (
+        <span
+          className="row-guides"
+          style={{
+            width: depth * 16,
+            top: firstInGroup ? 5 : undefined,
+            bottom: lastInGroup ? 5 : undefined,
+          }}
+          aria-hidden="true"
+        />
+      )}
       {showFavicon ? (
         <img
           className="tab-favicon"
