@@ -143,6 +143,10 @@ body {
   overflow-y: auto;
   border-bottom: 1px solid var(--border);
 }
+/* highlighted while a tab is dragged over the empty area (drop to root) */
+.navigator-area.drop-root {
+  box-shadow: inset 0 0 0 2px var(--accent-soft);
+}
 .navigator-area::-webkit-scrollbar { width: 4px; }
 .navigator-area::-webkit-scrollbar-track { background: transparent; }
 .navigator-area::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 2px; }
@@ -198,6 +202,12 @@ body {
 .bin-row.selected:hover {
   background: var(--accent-soft);
   box-shadow: inset 2px 0 0 var(--accent);
+}
+/* highlighted while a tab is dragged over it */
+.bin-row.drop-into,
+.bin-row.drop-into:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .bin-chevron {
