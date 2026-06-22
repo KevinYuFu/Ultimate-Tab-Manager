@@ -59,7 +59,8 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
   return updated
 }
 
-// Move a dragged tab to just before/after a target tab. Returns the new order.
+// Reorder a tab relative to a sibling, adopting that sibling's bin (so dropping
+// a tab among a bin's tabs also moves it into that bin). Returns the new order.
 export async function reorderTabs(
   draggedId: string,
   targetId: string,
@@ -68,14 +69,28 @@ export async function reorderTabs(
   const tabs = await getStashedTabs()
   if (draggedId === targetId) return tabs
   const dragged = tabs.find(t => t.id === draggedId)
-  if (!dragged) return tabs
+  const target = tabs.find(t => t.id === targetId)
+  if (!dragged || !target) return tabs
 
+  const moved: Tab = { ...dragged, binId: target.binId }
   const rest = tabs.filter(t => t.id !== draggedId)
   let idx = rest.findIndex(t => t.id === targetId)
   if (idx === -1) return tabs
   if (placeAfter) idx += 1
 
-  rest.splice(idx, 0, dragged)
+  rest.splice(idx, 0, moved)
+  await saveStashedTabs(rest)
+  return rest
+}
+
+// Move a tab into a bin (or to root when binId is null), placed at the end.
+export async function moveTabToBin(tabId: string, binId: string | null): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  const dragged = tabs.find(t => t.id === tabId)
+  if (!dragged || dragged.binId === binId) return tabs
+
+  const rest = tabs.filter(t => t.id !== tabId)
+  rest.push({ ...dragged, binId })
   await saveStashedTabs(rest)
   return rest
 }

@@ -4,28 +4,36 @@ import type { Bin } from '../types'
 
 type Props = {
   bin: Bin
+  depth: number
   expanded: boolean
   selected: boolean
   editing: boolean
+  dropInto: boolean
   onSelect: (id: string) => void
   onOpen: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
   onDelete: (id: string) => void
+  onDragOver: (id: string, e: React.DragEvent) => void
+  onDrop: (id: string, e: React.DragEvent) => void
 }
 
 export default function BinRow({
   bin,
+  depth,
   expanded,
   selected,
   editing,
+  dropInto,
   onSelect,
   onOpen,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
   onDelete,
+  onDragOver,
+  onDrop,
 }: Props) {
   const cancelledRef = useRef(false)
   const lastClickRef = useRef(0)
@@ -50,9 +58,19 @@ export default function BinRow({
 
   return (
     <div
-      className={`bin-row${selected ? ' selected' : ''}`}
+      className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}`}
+      style={{ marginLeft: depth * 16 }}
       onClick={handleClick}
+      onDragOver={(e) => onDragOver(bin.id, e)}
+      onDrop={(e) => onDrop(bin.id, e)}
     >
+      {depth > 0 && (
+        <span
+          className="row-guides"
+          style={{ width: depth * 16, left: -(depth * 16) }}
+          aria-hidden="true"
+        />
+      )}
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>
