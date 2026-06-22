@@ -28,16 +28,30 @@ export default function BinRow({
   onDelete,
 }: Props) {
   const cancelledRef = useRef(false)
+  const lastClickRef = useRef(0)
+
+  // Detect double-clicks ourselves instead of using the native dblclick event:
+  // the native one needs its click counter to reset between detections, so
+  // rapid repeated double-clicks feel laggy. We reset immediately after each
+  // one, so consecutive pairs (e.g. 4 fast clicks) toggle open/close cleanly.
+  const DOUBLE_CLICK_MS = 300
+  const handleClick = (e: React.MouseEvent) => {
+    if (editing) return
+    e.stopPropagation() // don't let the background handler clear selection
+    const now = Date.now()
+    if (now - lastClickRef.current < DOUBLE_CLICK_MS) {
+      lastClickRef.current = 0
+      onOpen(bin.id)
+    } else {
+      lastClickRef.current = now
+      onSelect(bin.id)
+    }
+  }
 
   return (
     <div
       className={`bin-row${selected ? ' selected' : ''}`}
-      onClick={(e) => {
-        if (editing) return
-        e.stopPropagation() // don't let the background handler clear selection
-        onSelect(bin.id)
-      }}
-      onDoubleClick={() => !editing && onOpen(bin.id)}
+      onClick={handleClick}
     >
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
