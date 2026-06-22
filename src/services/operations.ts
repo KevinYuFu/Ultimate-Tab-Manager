@@ -1,13 +1,22 @@
 // Higher-level operations that compose the tabs + storage + naming services.
 // Components call these; they never touch the chrome APIs directly.
 
-import type { Tab } from '../types'
-import { getStashedTabs, saveStashedTabs } from './storage'
+import type { Bin, Tab } from '../types'
+import {
+  getBins,
+  getStashedTabs,
+  saveBins,
+  saveStashedTabs,
+} from './storage'
 import { closeTab, getActiveTab, openUrl } from './tabs'
 import { smartName } from './smartName'
 
 export async function listStashedTabs(): Promise<Tab[]> {
   return getStashedTabs()
+}
+
+export async function listBins(): Promise<Bin[]> {
+  return getBins()
 }
 
 // Stash the active tab: save it first, then close it (so an interrupted
@@ -69,4 +78,37 @@ export async function reorderTabs(
   rest.splice(idx, 0, dragged)
   await saveStashedTabs(rest)
   return rest
+}
+
+// ── Bins (slice 1: create / rename / delete) ──
+
+export async function createBin(parentId: string | null): Promise<Bin> {
+  const bins = await getBins()
+  const bin: Bin = { id: crypto.randomUUID(), name: 'New Bin', parentId }
+  await saveBins([...bins, bin])
+  return bin
+}
+
+export async function renameBin(id: string, name: string): Promise<Bin[]> {
+  const bins = await getBins()
+  const updated = bins.map(b => (b.id === id ? { ...b, name } : b))
+  await saveBins(updated)
+  return updated
+}
+
+// Delete a bin, moving its child bins and tabs up to its parent (no data loss).
+export async function deleteBin(id: string): Promise<void> {
+  const bins = await getBins()
+  const tabs = await getStashedTabs()
+  const target = bins.find(b => b.id === id)
+  const newParent = target ? target.parentId : null
+
+  await saveBins(
+    bins
+      .filter(b => b.id !== id)
+      .map(b => (b.parentId === id ? { ...b, parentId: newParent } : b)),
+  )
+  await saveStashedTabs(
+    tabs.map(t => (t.binId === id ? { ...t, binId: newParent } : t)),
+  )
 }
