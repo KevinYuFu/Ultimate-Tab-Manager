@@ -289,14 +289,16 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
-  const renderTab = (tab: Tab) => {
+  const renderTab = (tab: Tab, depth: number) => {
     const dropBefore = dropState?.kind === 'tab' && dropState.id === tab.id && !dropState.after
     const dropAfter = dropState?.kind === 'tab' && dropState.id === tab.id && dropState.after
+    const lineStyle = { marginLeft: depth * 16 + 6 }
     return (
       <Fragment key={tab.id}>
-        {dropBefore && <div className="drop-line" />}
+        {dropBefore && <div className="drop-line" style={lineStyle} />}
         <TabRow
           tab={tab}
+          depth={depth}
           selected={selectedIds.has(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
           dragging={draggingId === tab.id}
@@ -311,7 +313,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           onDrop={handleItemDrop}
           onDragEnd={handleDragEnd}
         />
-        {dropAfter && <div className="drop-line" />}
+        {dropAfter && <div className="drop-line" style={lineStyle} />}
       </Fragment>
     )
   }
@@ -359,6 +361,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
               <Fragment key={bin.id}>
                 <BinRow
                   bin={bin}
+                  depth={0}
                   expanded={expanded.has(bin.id)}
                   selected={selectedBinId === bin.id}
                   editing={editing?.kind === 'bin' && editing.id === bin.id}
@@ -372,11 +375,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
                   onDragOver={handleBinDragOver}
                   onDrop={handleItemDrop}
                 />
-                {expanded.has(bin.id) && tabs.filter(t => t.binId === bin.id).map(renderTab)}
+                {expanded.has(bin.id) &&
+                  tabs.filter(t => t.binId === bin.id).map(t => renderTab(t, 1))}
               </Fragment>
             ))}
 
-            {rootTabs.map(renderTab)}
+            {rootTabs.map(t => renderTab(t, 0))}
           </div>
         )}
       </div>
