@@ -9,14 +9,17 @@ type Props = {
   selected: boolean
   editing: boolean
   dropInto: boolean
+  dragging: boolean
   onSelect: (id: string) => void
   onOpen: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
   onDelete: (id: string) => void
+  onDragStart: (id: string, e: React.DragEvent) => void
   onDragOver: (id: string, e: React.DragEvent) => void
   onDrop: (id: string, e: React.DragEvent) => void
+  onDragEnd: () => void
 }
 
 export default function BinRow({
@@ -26,14 +29,17 @@ export default function BinRow({
   selected,
   editing,
   dropInto,
+  dragging,
   onSelect,
   onOpen,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
   onDelete,
+  onDragStart,
   onDragOver,
   onDrop,
+  onDragEnd,
 }: Props) {
   const cancelledRef = useRef(false)
   const lastClickRef = useRef(0)
@@ -57,11 +63,14 @@ export default function BinRow({
 
   return (
     <div
-      className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}`}
+      className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}${dragging ? ' dragging' : ''}`}
       style={{ marginLeft: depth * 16 }}
+      draggable={!editing}
       onClick={handleClick}
+      onDragStart={(e) => onDragStart(bin.id, e)}
       onDragOver={(e) => onDragOver(bin.id, e)}
       onDrop={(e) => onDrop(bin.id, e)}
+      onDragEnd={onDragEnd}
     >
       {depth > 0 && (
         <span

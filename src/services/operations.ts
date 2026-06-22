@@ -127,3 +127,53 @@ export async function deleteBin(id: string): Promise<void> {
     tabs.map(t => (t.binId === id ? { ...t, binId: newParent } : t)),
   )
 }
+
+// Reorder a bin relative to a sibling bin, adopting that sibling's parent.
+// Rejects moves that would create a cycle (target inside the dragged subtree).
+export async function reorderBins(
+  draggedId: string,
+  targetId: string,
+  placeAfter: boolean,
+): Promise<Bin[]> {
+  const bins = await getBins()
+  if (draggedId === targetId) return bins
+  const dragged = bins.find(b => b.id === draggedId)
+  const target = bins.find(b => b.id === targetId)
+  if (!dragged || !target) return bins
+
+  // Walk up from target; if we reach the dragged bin, the move would cycle.
+  const byId = new Map(bins.map(b => [b.id, b]))
+  let cursor: string | null = target.parentId
+  while (cursor) {
+    if (cursor === draggedId) return bins
+    cursor = byId.get(cursor)?.parentId ?? null
+  }
+
+  const moved: Bin = { ...dragged, parentId: target.parentId }
+  const rest = bins.filter(b => b.id !== draggedId)
+  let idx = rest.findIndex(b => b.id === targetId)
+  if (idx === -1) return bins
+  if (placeAfter) idx += 1
+
+  rest.splice(idx, 0, moved)
+  await saveBins(rest)
+  return rest
+}
+
+// Nest a bin under newParentId (or root when null), rejecting cycles
+// (can't drop a bin into itself or one of its descendants).
+export async function moveBin(binId: string, newParentId: string | null): Promise<Bin[]> {
+  const bins = await getBins()
+  if (binId === newParentId) return bins
+
+  const byId = new Map(bins.map(b => [b.id, b]))
+  let cursor = newParentId
+  while (cursor) {
+    if (cursor === binId) return bins // newParent is a descendant → would cycle
+    cursor = byId.get(cursor)?.parentId ?? null
+  }
+
+  const updated = bins.map(b => (b.id === binId ? { ...b, parentId: newParentId } : b))
+  await saveBins(updated)
+  return updated
+}
