@@ -8,6 +8,7 @@ import {
   deleteStashedTab,
   listBins,
   listStashedTabs,
+  moveBin,
   moveTabToBin,
   openStashedTab,
   renameBin,
@@ -35,7 +36,10 @@ const SECONDARY: { op: Operation; label: string }[] = [
 // What's currently being renamed inline — a tab or a bin.
 type Editing = { kind: 'tab' | 'bin'; id: string } | null
 
-// Where a dragged tab would land: between tabs, into a bin, or out at root.
+// The item being dragged — a tab or a bin.
+type DragItem = { kind: 'tab' | 'bin'; id: string } | null
+
+// Where the dragged item would land: between tabs, into a bin, or out at root.
 type DropState =
   | { kind: 'tab'; id: string; after: boolean }
   | { kind: 'bin'; id: string }
@@ -54,7 +58,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [editing, setEditing] = useState<Editing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [selectedBinId, setSelectedBinId] = useState<string | null>(null)
-  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const [draggingItem, setDraggingItem] = useState<DragItem>(null)
   const [dropState, setDropState] = useState<DropState>(null)
   const anchorRef = useRef<string | null>(null)
 
@@ -208,19 +212,32 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     anchorRef.current = id
   }
 
-  // ── Drag and drop: reorder tabs and move them into / out of bins ──
-  const handleDragStart = (id: string, e: React.DragEvent) => {
-    setDraggingId(id)
+  // Is bin `maybeChildId` a descendant of `ancestorId`? Used to block nesting a
+  // bin into its own subtree (which would create a cycle).
+  const isDescendantBin = (maybeChildId: string, ancestorId: string) => {
+    const byId = new Map(bins.map(b => [b.id, b]))
+    let cursor = byId.get(maybeChildId)?.parentId ?? null
+    while (cursor) {
+      if (cursor === ancestorId) return true
+      cursor = byId.get(cursor)?.parentId ?? null
+    }
+    return false
+  }
+
+  // ── Drag and drop: reorder/move tabs, and nest/move bins ──
+  const handleDragStart = (kind: 'tab' | 'bin', id: string, e: React.DragEvent) => {
+    setDraggingItem({ kind, id })
     clearSelection()
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', id)
   }
 
-  // Over a tab → reorder before/after it.
+  // Over a tab → reorder before/after it (only when dragging a tab).
   const handleTabDragOver = (id: string, e: React.DragEvent) => {
+    if (draggingItem?.kind !== 'tab') return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (id === draggingId) {
+    if (id === draggingItem.id) {
       setDropState(null)
       return
     }
@@ -229,17 +246,21 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     setDropState({ kind: 'tab', id, after })
   }
 
-  // Over a bin → move the tab into it.
+  // Over a bin → move a tab in, or nest a bin (unless that would cycle).
   const handleBinDragOver = (id: string, e: React.DragEvent) => {
-    if (!draggingId) return
+    if (!draggingItem) return
+    if (draggingItem.kind === 'bin' && (id === draggingItem.id || isDescendantBin(id, draggingItem.id))) {
+      setDropState(null)
+      return
+    }
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     setDropState({ kind: 'bin', id })
   }
 
-  // Over the empty area → move the tab out to root.
+  // Over the empty area → move the item out to root.
   const handleRootDragOver = (e: React.DragEvent) => {
-    if (!draggingId || e.target !== e.currentTarget) return
+    if (!draggingItem || e.target !== e.currentTarget) return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
     setDropState({ kind: 'root' })
@@ -248,32 +269,37 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   // Accept the drop; the move is committed in handleDragEnd, which fires on
   // every release — even when the cursor overshoots onto a non-row element.
   const handleItemDrop = (_id: string, e: React.DragEvent) => {
-    if (draggingId) e.preventDefault()
+    if (draggingItem) e.preventDefault()
   }
 
   // Accept the drop anywhere in the popup during a drag, so a release over a
   // non-row spot doesn't trigger the slow snap-back animation.
   const handleViewDragOver = (e: React.DragEvent) => {
-    if (draggingId) e.preventDefault()
+    if (draggingItem) e.preventDefault()
   }
   const handleViewDrop = (e: React.DragEvent) => {
-    if (draggingId) e.preventDefault()
+    if (draggingItem) e.preventDefault()
   }
 
   const handleDragEnd = async () => {
-    const id = draggingId
+    const item = draggingItem
     const drop = dropState
-    setDraggingId(null)
+    setDraggingItem(null)
     setDropState(null)
-    if (!id || !drop) return
+    if (!item || !drop) return
 
-    if (drop.kind === 'tab') {
-      await reorderTabs(id, drop.id, drop.after)
-    } else if (drop.kind === 'bin') {
-      await moveTabToBin(id, drop.id)
-      setExpanded(prev => new Set(prev).add(drop.id)) // reveal where it landed
-    } else if (drop.kind === 'root') {
-      await moveTabToBin(id, null)
+    if (item.kind === 'tab') {
+      if (drop.kind === 'tab') await reorderTabs(item.id, drop.id, drop.after)
+      else if (drop.kind === 'bin') {
+        await moveTabToBin(item.id, drop.id)
+        setExpanded(prev => new Set(prev).add(drop.id)) // reveal where it landed
+      } else if (drop.kind === 'root') await moveTabToBin(item.id, null)
+    } else {
+      if (drop.kind === 'bin') {
+        await moveBin(item.id, drop.id)
+        setExpanded(prev => new Set(prev).add(drop.id))
+      } else if (drop.kind === 'root') await moveBin(item.id, null)
+      // dropping a bin onto a tab does nothing
     }
     await refresh()
   }
@@ -282,10 +308,6 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     stash: handleStash,
     newBin: handleNewBin,
   }
-
-  // Bins are still flat (root-only); nesting is slice 3. Tabs can now live in bins.
-  const rootBins = bins.filter(b => b.parentId === null)
-  const rootTabs = tabs.filter(t => t.binId === null)
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
@@ -303,20 +325,58 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           lastInGroup={lastInGroup}
           selected={selectedIds.has(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
-          dragging={draggingId === tab.id}
+          dragging={draggingItem?.kind === 'tab' && draggingItem.id === tab.id}
           onSelect={handleSelect}
           onOpen={handleOpen}
           onDelete={handleDeleteTab}
           onStartEdit={id => setEditing({ kind: 'tab', id })}
           onCommitEdit={handleCommitTabEdit}
           onCancelEdit={cancelEdit}
-          onDragStart={handleDragStart}
+          onDragStart={(id, e) => handleDragStart('tab', id, e)}
           onDragOver={handleTabDragOver}
           onDrop={handleItemDrop}
           onDragEnd={handleDragEnd}
         />
         {dropAfter && <div className="drop-line" style={lineStyle} />}
       </Fragment>
+    )
+  }
+
+  // Recursively render one level of the tree: child bins (each with their
+  // subtree when expanded), then child tabs.
+  const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
+    const childBins = bins.filter(b => b.parentId === parentId)
+    const childTabs = tabs.filter(t => t.binId === parentId)
+    return (
+      <>
+        {childBins.map(bin => (
+          <Fragment key={bin.id}>
+            <BinRow
+              bin={bin}
+              depth={depth}
+              expanded={expanded.has(bin.id)}
+              selected={selectedBinId === bin.id}
+              editing={editing?.kind === 'bin' && editing.id === bin.id}
+              dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
+              dragging={draggingItem?.kind === 'bin' && draggingItem.id === bin.id}
+              onSelect={handleSelectBin}
+              onOpen={handleOpenBin}
+              onStartEdit={id => setEditing({ kind: 'bin', id })}
+              onCommitEdit={handleCommitBinEdit}
+              onCancelEdit={cancelEdit}
+              onDelete={handleDeleteBin}
+              onDragStart={(id, e) => handleDragStart('bin', id, e)}
+              onDragOver={handleBinDragOver}
+              onDrop={handleItemDrop}
+              onDragEnd={handleDragEnd}
+            />
+            {expanded.has(bin.id) && renderLevel(bin.id, depth + 1)}
+          </Fragment>
+        ))}
+        {childTabs.map((t, i) =>
+          renderTab(t, depth, i === 0, i === childTabs.length - 1),
+        )}
+      </>
     )
   }
 
@@ -358,37 +418,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
             <p className="empty-hint">Stash a tab to get started</p>
           </div>
         ) : (
-          <div className="tab-list">
-            {rootBins.map(bin => {
-              const binTabs = tabs.filter(t => t.binId === bin.id)
-              return (
-                <Fragment key={bin.id}>
-                  <BinRow
-                    bin={bin}
-                    depth={0}
-                    expanded={expanded.has(bin.id)}
-                    selected={selectedBinId === bin.id}
-                    editing={editing?.kind === 'bin' && editing.id === bin.id}
-                    dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
-                    onSelect={handleSelectBin}
-                    onOpen={handleOpenBin}
-                    onStartEdit={id => setEditing({ kind: 'bin', id })}
-                    onCommitEdit={handleCommitBinEdit}
-                    onCancelEdit={cancelEdit}
-                    onDelete={handleDeleteBin}
-                    onDragOver={handleBinDragOver}
-                    onDrop={handleItemDrop}
-                  />
-                  {expanded.has(bin.id) &&
-                    binTabs.map((t, i) =>
-                      renderTab(t, 1, i === 0, i === binTabs.length - 1),
-                    )}
-                </Fragment>
-              )
-            })}
-
-            {rootTabs.map(t => renderTab(t, 0))}
-          </div>
+          <div className="tab-list">{renderLevel(null, 0)}</div>
         )}
       </div>
 

@@ -236,6 +236,7 @@ body {
   pointer-events: none;
   transition: background 0.08s;
 }
+.bin-row.dragging { opacity: 0.35; }
 .bin-row:hover::before { background: var(--hover); }
 .bin-row.selected::before {
   background: var(--accent-soft);

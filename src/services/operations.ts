@@ -127,3 +127,21 @@ export async function deleteBin(id: string): Promise<void> {
     tabs.map(t => (t.binId === id ? { ...t, binId: newParent } : t)),
   )
 }
+
+// Nest a bin under newParentId (or root when null), rejecting cycles
+// (can't drop a bin into itself or one of its descendants).
+export async function moveBin(binId: string, newParentId: string | null): Promise<Bin[]> {
+  const bins = await getBins()
+  if (binId === newParentId) return bins
+
+  const byId = new Map(bins.map(b => [b.id, b]))
+  let cursor = newParentId
+  while (cursor) {
+    if (cursor === binId) return bins // newParent is a descendant → would cycle
+    cursor = byId.get(cursor)?.parentId ?? null
+  }
+
+  const updated = bins.map(b => (b.id === binId ? { ...b, parentId: newParentId } : b))
+  await saveBins(updated)
+  return updated
+}
