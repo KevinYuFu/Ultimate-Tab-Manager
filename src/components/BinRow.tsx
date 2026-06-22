@@ -59,12 +59,18 @@ export default function BinRow({
   return (
     <div
       className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}`}
-      style={{ paddingLeft: depth * 16 + 10 }}
+      style={{ marginLeft: depth * 16 }}
       onClick={handleClick}
       onDragOver={(e) => onDragOver(bin.id, e)}
       onDrop={(e) => onDrop(bin.id, e)}
     >
-      {depth > 0 && <span className="row-guides" style={{ width: depth * 16 }} aria-hidden="true" />}
+      {depth > 0 && (
+        <span
+          className="row-guides"
+          style={{ width: depth * 16, left: -(depth * 16) }}
+          aria-hidden="true"
+        />
+      )}
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>

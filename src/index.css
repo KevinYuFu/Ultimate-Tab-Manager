@@ -170,19 +170,22 @@ body {
   transition: background 0.08s;
 }
 
-/* Vertical indent guide lines (one per nesting level), drawn as an overlay so
-   they don't affect layout. A 1px line at the start of each 16px level. */
+/* Vertical indent guide lines (one per nesting level), drawn in the gutter to
+   the left of the (indented) row so the hover/selection highlight starts after
+   them. An overlay, so it doesn't affect layout. A 1px line centered in each
+   16px level; left/width are set inline from the row's depth. */
 .row-guides {
   position: absolute;
-  left: 10px;
   top: 0;
   bottom: 0;
   pointer-events: none;
   background-image: repeating-linear-gradient(
     to right,
-    var(--border-md) 0,
-    var(--border-md) 1px,
-    transparent 1px,
+    transparent 0,
+    transparent 7px,
+    var(--border-md) 7px,
+    var(--border-md) 8px,
+    transparent 8px,
     transparent 16px
   );
 }

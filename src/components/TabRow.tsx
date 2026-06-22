@@ -60,7 +60,7 @@ export default function TabRow({
   return (
     <div
       className={className}
-      style={{ paddingLeft: depth * 16 + 10 }}
+      style={{ marginLeft: depth * 16 }}
       draggable={!editing}
       onClick={(e) => onSelect(tab, e)}
       onDoubleClick={() => onOpen(tab)}
@@ -75,6 +75,7 @@ export default function TabRow({
           className="row-guides"
           style={{
             width: depth * 16,
+            left: -(depth * 16),
             top: firstInGroup ? 5 : undefined,
             bottom: lastInGroup ? 5 : undefined,
           }}
