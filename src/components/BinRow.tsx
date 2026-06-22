@@ -38,13 +38,6 @@ export default function BinRow({
   const cancelledRef = useRef(false)
   const lastClickRef = useRef(0)
 
-  // NOTE: bins intentionally diverge from the tab select/open grammar in
-  // CLAUDE.md. A single click both selects AND toggles the folder open/closed
-  // (a click that doesn't open a folder felt dead), and a double click renames
-  // it. This is an experiment — if it proves confusing, revert to the standard
-  // single = select / double = open. (Caveat: a double-click's first click
-  // toggles, so the folder flips once before rename begins.)
-  //
   // We detect double-clicks ourselves rather than using the native dblclick
   // event, which needs its counter to reset between detections and feels laggy.
   const DOUBLE_CLICK_MS = 300
