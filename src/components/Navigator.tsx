@@ -10,6 +10,7 @@ import {
   listStashedTabs,
   moveBin,
   moveTabToBin,
+  reorderBins,
   openStashedTab,
   renameBin,
   renameStashedTab,
@@ -39,9 +40,11 @@ type Editing = { kind: 'tab' | 'bin'; id: string } | null
 // The item being dragged — a tab or a bin.
 type DragItem = { kind: 'tab' | 'bin'; id: string } | null
 
-// Where the dragged item would land: between tabs, into a bin, or out at root.
+// Where the dragged item would land: reordered next to a tab or bin, nested
+// into a bin, or out at root.
 type DropState =
   | { kind: 'tab'; id: string; after: boolean }
+  | { kind: 'binReorder'; id: string; after: boolean }
   | { kind: 'bin'; id: string }
   | { kind: 'root' }
   | null
@@ -246,16 +249,36 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     setDropState({ kind: 'tab', id, after })
   }
 
-  // Over a bin → move a tab in, or nest a bin (unless that would cycle).
+  // Over a bin:
+  //  - dragging a tab → always "into" the bin
+  //  - dragging a bin → top/bottom edge reorders before/after it, middle nests
+  //    inside it (blocked when it would cycle)
   const handleBinDragOver = (id: string, e: React.DragEvent) => {
     if (!draggingItem) return
-    if (draggingItem.kind === 'bin' && (id === draggingItem.id || isDescendantBin(id, draggingItem.id))) {
+
+    if (draggingItem.kind === 'tab') {
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'move'
+      setDropState({ kind: 'bin', id })
+      return
+    }
+
+    // dragging a bin
+    if (id === draggingItem.id || isDescendantBin(id, draggingItem.id)) {
       setDropState(null)
       return
     }
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    setDropState({ kind: 'bin', id })
+    const rect = e.currentTarget.getBoundingClientRect()
+    const y = e.clientY - rect.top
+    if (y < rect.height * 0.25) {
+      setDropState({ kind: 'binReorder', id, after: false })
+    } else if (y > rect.height * 0.75) {
+      setDropState({ kind: 'binReorder', id, after: true })
+    } else {
+      setDropState({ kind: 'bin', id })
+    }
   }
 
   // Over the empty area → move the item out to root.
@@ -295,7 +318,8 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
         setExpanded(prev => new Set(prev).add(drop.id)) // reveal where it landed
       } else if (drop.kind === 'root') await moveTabToBin(item.id, null)
     } else {
-      if (drop.kind === 'bin') {
+      if (drop.kind === 'binReorder') await reorderBins(item.id, drop.id, drop.after)
+      else if (drop.kind === 'bin') {
         await moveBin(item.id, drop.id)
         setExpanded(prev => new Set(prev).add(drop.id))
       } else if (drop.kind === 'root') await moveBin(item.id, null)
@@ -347,32 +371,39 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
     const childBins = bins.filter(b => b.parentId === parentId)
     const childTabs = tabs.filter(t => t.binId === parentId)
+    const lineStyle = { marginLeft: depth * 16 + 6 }
     return (
       <>
-        {childBins.map(bin => (
-          <Fragment key={bin.id}>
-            <BinRow
-              bin={bin}
-              depth={depth}
-              expanded={expanded.has(bin.id)}
-              selected={selectedBinId === bin.id}
-              editing={editing?.kind === 'bin' && editing.id === bin.id}
-              dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
-              dragging={draggingItem?.kind === 'bin' && draggingItem.id === bin.id}
-              onSelect={handleSelectBin}
-              onOpen={handleOpenBin}
-              onStartEdit={id => setEditing({ kind: 'bin', id })}
-              onCommitEdit={handleCommitBinEdit}
-              onCancelEdit={cancelEdit}
-              onDelete={handleDeleteBin}
-              onDragStart={(id, e) => handleDragStart('bin', id, e)}
-              onDragOver={handleBinDragOver}
-              onDrop={handleItemDrop}
-              onDragEnd={handleDragEnd}
-            />
-            {expanded.has(bin.id) && renderLevel(bin.id, depth + 1)}
-          </Fragment>
-        ))}
+        {childBins.map(bin => {
+          const before = dropState?.kind === 'binReorder' && dropState.id === bin.id && !dropState.after
+          const after = dropState?.kind === 'binReorder' && dropState.id === bin.id && dropState.after
+          return (
+            <Fragment key={bin.id}>
+              {before && <div className="drop-line" style={lineStyle} />}
+              <BinRow
+                bin={bin}
+                depth={depth}
+                expanded={expanded.has(bin.id)}
+                selected={selectedBinId === bin.id}
+                editing={editing?.kind === 'bin' && editing.id === bin.id}
+                dropInto={dropState?.kind === 'bin' && dropState.id === bin.id}
+                dragging={draggingItem?.kind === 'bin' && draggingItem.id === bin.id}
+                onSelect={handleSelectBin}
+                onOpen={handleOpenBin}
+                onStartEdit={id => setEditing({ kind: 'bin', id })}
+                onCommitEdit={handleCommitBinEdit}
+                onCancelEdit={cancelEdit}
+                onDelete={handleDeleteBin}
+                onDragStart={(id, e) => handleDragStart('bin', id, e)}
+                onDragOver={handleBinDragOver}
+                onDrop={handleItemDrop}
+                onDragEnd={handleDragEnd}
+              />
+              {expanded.has(bin.id) && renderLevel(bin.id, depth + 1)}
+              {after && <div className="drop-line" style={lineStyle} />}
+            </Fragment>
+          )
+        })}
         {childTabs.map((t, i) =>
           renderTab(t, depth, i === 0, i === childTabs.length - 1),
         )}
