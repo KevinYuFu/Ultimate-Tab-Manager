@@ -45,6 +45,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<Editing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [selectedBinId, setSelectedBinId] = useState<string | null>(null)
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<{ id: string; after: boolean } | null>(null)
   const anchorRef = useRef<string | null>(null)
@@ -63,6 +64,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     const bin = await createBin(null)
     await refresh()
     setExpanded(prev => new Set(prev).add(bin.id))
+    setSelectedBinId(bin.id)
     setEditing({ kind: 'bin', id: bin.id })
   }
 
@@ -74,13 +76,25 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       const combo = captureKey(e)
       if (!combo) return
 
-      if (combo === keybindings.open && selectedIds.size > 0) {
-        e.preventDefault()
-        tabs.filter(t => selectedIds.has(t.id)).forEach(openStashedTab)
-      } else if (combo === keybindings.editName && selectedIds.size === 1) {
-        e.preventDefault()
-        const [id] = [...selectedIds]
-        setEditing({ kind: 'tab', id })
+      if (combo === keybindings.open) {
+        // Open: a selected bin expands/collapses; selected tabs open in browser.
+        if (selectedBinId) {
+          e.preventDefault()
+          handleOpenBin(selectedBinId)
+        } else if (selectedIds.size > 0) {
+          e.preventDefault()
+          tabs.filter(t => selectedIds.has(t.id)).forEach(openStashedTab)
+        }
+      } else if (combo === keybindings.editName) {
+        // Edit: rename the selected bin, or the single selected tab.
+        if (selectedBinId) {
+          e.preventDefault()
+          setEditing({ kind: 'bin', id: selectedBinId })
+        } else if (selectedIds.size === 1) {
+          e.preventDefault()
+          const [id] = [...selectedIds]
+          setEditing({ kind: 'tab', id })
+        }
       } else if (combo === keybindings.newBin) {
         e.preventDefault()
         handleNewBin()
@@ -88,7 +102,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedIds, tabs, editing, keybindings])
+  }, [selectedIds, selectedBinId, tabs, editing, keybindings])
 
   const handleStash = async () => {
     await stashActiveTab()
@@ -117,7 +131,15 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   }
 
   // ── Bins ──
-  const handleToggle = (id: string) => {
+  // Select a bin (single selection, separate from the tab multi-selection).
+  const handleSelectBin = (id: string) => {
+    setSelectedBinId(id)
+    setSelectedIds(new Set())
+    anchorRef.current = null
+  }
+
+  // Open a bin = expand/collapse it.
+  const handleOpenBin = (id: string) => {
     setExpanded(prev => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -144,11 +166,13 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   // ── Selection (tabs only) ──
   const clearSelection = () => {
     setSelectedIds(new Set())
+    setSelectedBinId(null)
     anchorRef.current = null
   }
 
   const handleSelect = (tab: Tab, e: React.MouseEvent) => {
     e.stopPropagation()
+    setSelectedBinId(null) // selecting a tab clears any bin selection
     const id = tab.id
 
     if (e.shiftKey && anchorRef.current) {
@@ -303,8 +327,10 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
                 <BinRow
                   bin={bin}
                   expanded={expanded.has(bin.id)}
+                  selected={selectedBinId === bin.id}
                   editing={editing?.kind === 'bin' && editing.id === bin.id}
-                  onToggle={handleToggle}
+                  onSelect={handleSelectBin}
+                  onOpen={handleOpenBin}
                   onStartEdit={id => setEditing({ kind: 'bin', id })}
                   onCommitEdit={handleCommitBinEdit}
                   onCancelEdit={cancelEdit}

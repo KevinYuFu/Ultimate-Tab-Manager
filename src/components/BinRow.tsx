@@ -5,8 +5,10 @@ import type { Bin } from '../types'
 type Props = {
   bin: Bin
   expanded: boolean
+  selected: boolean
   editing: boolean
-  onToggle: (id: string) => void
+  onSelect: (id: string) => void
+  onOpen: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
@@ -16,8 +18,10 @@ type Props = {
 export default function BinRow({
   bin,
   expanded,
+  selected,
   editing,
-  onToggle,
+  onSelect,
+  onOpen,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
@@ -26,7 +30,15 @@ export default function BinRow({
   const cancelledRef = useRef(false)
 
   return (
-    <div className="bin-row" onClick={() => !editing && onToggle(bin.id)}>
+    <div
+      className={`bin-row${selected ? ' selected' : ''}`}
+      onClick={(e) => {
+        if (editing) return
+        e.stopPropagation() // don't let the background handler clear selection
+        onSelect(bin.id)
+      }}
+      onDoubleClick={() => !editing && onOpen(bin.id)}
+    >
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>

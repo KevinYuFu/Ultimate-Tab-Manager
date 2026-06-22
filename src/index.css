@@ -194,6 +194,11 @@ body {
   transition: background 0.08s;
 }
 .bin-row:hover { background: var(--hover); }
+.bin-row.selected,
+.bin-row.selected:hover {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
 
 .bin-chevron {
   display: flex;
