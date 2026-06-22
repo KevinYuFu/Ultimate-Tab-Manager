@@ -60,3 +60,10 @@ asking first.
   cancel a mouse drag by dragging back, not with the keyboard).
 - Keyboard-first, vim-like: every action has a hotkey; hotkeys are configurable
   in Preferences and matched via the user's keybindings, not hardcoded.
+- **Consistent select/open grammar across item types.** All navigator items
+  (tabs, bins, and any future type) share the same interaction: single click =
+  select, double click (or Enter on the selection) = open. "Open" is
+  type-specific — a tab opens in the browser, a bin expands/collapses — but the
+  trigger is identical. Keep select and open as separate operations so their
+  triggers can be rebound. When adding a new item type, it inherits this grammar
+  by default.
