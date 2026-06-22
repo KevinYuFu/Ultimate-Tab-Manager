@@ -38,10 +38,8 @@ export default function BinRow({
   const cancelledRef = useRef(false)
   const lastClickRef = useRef(0)
 
-  // Detect double-clicks ourselves instead of using the native dblclick event:
-  // the native one needs its click counter to reset between detections, so
-  // rapid repeated double-clicks feel laggy. We reset immediately after each
-  // one, so consecutive pairs (e.g. 4 fast clicks) toggle open/close cleanly.
+  // We detect double-clicks ourselves rather than using the native dblclick
+  // event, which needs its counter to reset between detections and feels laggy.
   const DOUBLE_CLICK_MS = 300
   const handleClick = (e: React.MouseEvent) => {
     if (editing) return
@@ -49,10 +47,11 @@ export default function BinRow({
     const now = Date.now()
     if (now - lastClickRef.current < DOUBLE_CLICK_MS) {
       lastClickRef.current = 0
-      onOpen(bin.id)
+      onStartEdit(bin.id) // double click → rename
     } else {
       lastClickRef.current = now
-      onSelect(bin.id)
+      onSelect(bin.id) // single click → select…
+      onOpen(bin.id) //                …and toggle open/closed
     }
   }
 
