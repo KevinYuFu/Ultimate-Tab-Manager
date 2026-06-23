@@ -1,5 +1,5 @@
 import { Layers, Settings } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { Bin, Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
 import {
@@ -14,6 +14,7 @@ import {
   stashActiveTab,
 } from '../services/operations'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
+import { useSelection } from '../hooks/useSelection'
 import BinRow from './BinRow'
 import TabRow from './TabRow'
 
@@ -42,11 +43,10 @@ type Props = {
 export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [bins, setBins] = useState<Bin[]>([])
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [editing, setEditing] = useState<Editing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  const [selectedBinId, setSelectedBinId] = useState<string | null>(null)
-  const anchorRef = useRef<string | null>(null)
+
+  const sel = useSelection(tabs)
 
   const refresh = async () => {
     const [t, b] = await Promise.all([listStashedTabs(), listBins()])
@@ -57,7 +57,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const dnd = useDragAndDrop({
     bins,
     onChange: refresh,
-    onDragStart: () => clearSelection(),
+    onDragStart: sel.clear,
     onNestInto: id => setExpanded(prev => new Set(prev).add(id)),
   })
 
@@ -69,7 +69,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     const bin = await createBin(null)
     await refresh()
     setExpanded(prev => new Set(prev).add(bin.id))
-    setSelectedBinId(bin.id)
+    sel.selectBin(bin.id)
     setEditing({ kind: 'bin', id: bin.id })
   }
 
@@ -83,21 +83,21 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
       if (combo === keybindings.open) {
         // Open: a selected bin expands/collapses; selected tabs open in browser.
-        if (selectedBinId) {
+        if (sel.selectedBinId) {
           e.preventDefault()
-          handleOpenBin(selectedBinId)
-        } else if (selectedIds.size > 0) {
+          handleOpenBin(sel.selectedBinId)
+        } else if (sel.selectedIds.size > 0) {
           e.preventDefault()
-          tabs.filter(t => selectedIds.has(t.id)).forEach(openStashedTab)
+          tabs.filter(t => sel.selectedIds.has(t.id)).forEach(openStashedTab)
         }
       } else if (combo === keybindings.editName) {
         // Edit: rename the selected bin, or the single selected tab.
-        if (selectedBinId) {
+        if (sel.selectedBinId) {
           e.preventDefault()
-          setEditing({ kind: 'bin', id: selectedBinId })
-        } else if (selectedIds.size === 1) {
+          setEditing({ kind: 'bin', id: sel.selectedBinId })
+        } else if (sel.selectedIds.size === 1) {
           e.preventDefault()
-          const [id] = [...selectedIds]
+          const [id] = [...sel.selectedIds]
           setEditing({ kind: 'tab', id })
         }
       } else if (combo === keybindings.newBin) {
@@ -107,7 +107,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedIds, selectedBinId, tabs, editing, keybindings])
+  }, [sel.selectedIds, sel.selectedBinId, tabs, editing, keybindings])
 
   const handleStash = async () => {
     await stashActiveTab()
@@ -118,11 +118,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const handleDeleteTab = async (id: string) => {
     await deleteStashedTab(id)
     await refresh()
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      next.delete(id)
-      return next
-    })
+    sel.deselectTab(id)
   }
 
   const handleOpen = (tab: Tab) => openStashedTab(tab)
@@ -136,13 +132,6 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   }
 
   // ── Bins ──
-  // Select a bin (single selection, separate from the tab multi-selection).
-  const handleSelectBin = (id: string) => {
-    setSelectedBinId(id)
-    setSelectedIds(new Set())
-    anchorRef.current = null
-  }
-
   // Open a bin = expand/collapse it.
   const handleOpenBin = (id: string) => {
     setExpanded(prev => {
@@ -168,43 +157,6 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   const cancelEdit = () => setEditing(null)
 
-  // ── Selection (tabs only) ──
-  const clearSelection = () => {
-    setSelectedIds(new Set())
-    setSelectedBinId(null)
-    anchorRef.current = null
-  }
-
-  const handleSelect = (tab: Tab, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setSelectedBinId(null) // selecting a tab clears any bin selection
-    const id = tab.id
-
-    if (e.shiftKey && anchorRef.current) {
-      const anchorIdx = tabs.findIndex(t => t.id === anchorRef.current)
-      const clickedIdx = tabs.findIndex(t => t.id === id)
-      if (anchorIdx !== -1 && clickedIdx !== -1) {
-        const [lo, hi] = anchorIdx < clickedIdx ? [anchorIdx, clickedIdx] : [clickedIdx, anchorIdx]
-        setSelectedIds(new Set(tabs.slice(lo, hi + 1).map(t => t.id)))
-        return
-      }
-    }
-
-    if (e.ctrlKey || e.metaKey) {
-      setSelectedIds(prev => {
-        const next = new Set(prev)
-        if (next.has(id)) next.delete(id)
-        else next.add(id)
-        return next
-      })
-      anchorRef.current = id
-      return
-    }
-
-    setSelectedIds(new Set([id]))
-    anchorRef.current = id
-  }
-
   const handlers: Partial<Record<Operation, () => void>> = {
     stash: handleStash,
     newBin: handleNewBin,
@@ -224,10 +176,10 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           depth={depth}
           firstInGroup={firstInGroup}
           lastInGroup={lastInGroup}
-          selected={selectedIds.has(tab.id)}
+          selected={sel.selectedIds.has(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
           dragging={dnd.draggingItem?.kind === 'tab' && dnd.draggingItem.id === tab.id}
-          onSelect={handleSelect}
+          onSelect={sel.selectTab}
           onOpen={handleOpen}
           onDelete={handleDeleteTab}
           onStartEdit={id => setEditing({ kind: 'tab', id })}
@@ -261,11 +213,11 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
                 bin={bin}
                 depth={depth}
                 expanded={expanded.has(bin.id)}
-                selected={selectedBinId === bin.id}
+                selected={sel.selectedBinId === bin.id}
                 editing={editing?.kind === 'bin' && editing.id === bin.id}
                 dropInto={dnd.dropState?.kind === 'bin' && dnd.dropState.id === bin.id}
                 dragging={dnd.draggingItem?.kind === 'bin' && dnd.draggingItem.id === bin.id}
-                onSelect={handleSelectBin}
+                onSelect={sel.selectBin}
                 onOpen={handleOpenBin}
                 onStartEdit={id => setEditing({ kind: 'bin', id })}
                 onCommitEdit={handleCommitBinEdit}
@@ -316,7 +268,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
       <div
         className={`navigator-area${dnd.dropState?.kind === 'root' ? ' drop-root' : ''}`}
-        onClick={clearSelection}
+        onClick={sel.clear}
         onDragOver={dnd.rootDragOver}
       >
         {isEmpty ? (
