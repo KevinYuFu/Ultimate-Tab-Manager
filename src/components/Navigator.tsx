@@ -12,6 +12,7 @@ import {
   renameBin,
   renameStashedTab,
   stashActiveTab,
+  stashAllTabs,
 } from '../services/operations'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
 import { useSelection } from '../hooks/useSelection'
@@ -103,6 +104,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       } else if (combo === keybindings.newBin) {
         e.preventDefault()
         handleNewBin()
+      } else if (combo === keybindings.stash) {
+        e.preventDefault()
+        handleStash()
+      } else if (combo === keybindings.stashAll) {
+        e.preventDefault()
+        handleStashAll()
       }
     }
     window.addEventListener('keydown', onKeyDown)
@@ -112,6 +119,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const handleStash = async () => {
     await stashActiveTab()
     await refresh()
+  }
+
+  const handleStashAll = async () => {
+    const binId = await stashAllTabs()
+    await refresh()
+    if (binId) setExpanded(prev => new Set(prev).add(binId))
   }
 
   // ── Tabs ──
@@ -159,6 +172,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   const handlers: Partial<Record<Operation, () => void>> = {
     stash: handleStash,
+    stashAll: handleStashAll,
     newBin: handleNewBin,
   }
 

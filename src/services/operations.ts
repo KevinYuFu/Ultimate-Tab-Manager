@@ -8,7 +8,13 @@ import {
   saveBins,
   saveStashedTabs,
 } from './storage'
-import { closeTab, getActiveTab, openUrl } from './tabs'
+import {
+  closeTab,
+  closeTabs,
+  getActiveTab,
+  getTabsInCurrentWindow,
+  openUrl,
+} from './tabs'
 import { smartName } from './smartName'
 
 export async function listStashedTabs(): Promise<Tab[]> {
@@ -43,6 +49,43 @@ export async function stashActiveTab(): Promise<Tab[]> {
 
 export async function openStashedTab(tab: Tab): Promise<void> {
   await openUrl(tab.url)
+}
+
+// Stash every normal (http/https) tab in the current window into a new
+// date-named bin, then close them. Returns the new bin's id (or null if there
+// was nothing to stash). chrome:// / new-tab pages are skipped.
+export async function stashAllTabs(): Promise<string | null> {
+  const open = await getTabsInCurrentWindow()
+  const stashable = open.filter(t => t.url && /^https?:/i.test(t.url))
+  if (stashable.length === 0) return null
+
+  const bins = await getBins()
+  const existing = await getStashedTabs()
+
+  const bin: Bin = {
+    id: crypto.randomUUID(),
+    name: new Date().toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }),
+    parentId: null,
+  }
+  const now = Date.now()
+  const stashed: Tab[] = stashable.map(t => ({
+    id: crypto.randomUUID(),
+    url: t.url!,
+    name: smartName(t.title, t.url!),
+    favicon: t.favIconUrl ?? '',
+    dateAdded: now,
+    binId: bin.id,
+  }))
+
+  await saveBins([bin, ...bins])
+  await saveStashedTabs([...stashed, ...existing])
+  await closeTabs(stashable.map(t => t.id).filter((id): id is number => id !== undefined))
+  return bin.id
 }
 
 export async function renameStashedTab(id: string, name: string): Promise<Tab[]> {
