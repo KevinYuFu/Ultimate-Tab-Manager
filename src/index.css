@@ -306,7 +306,8 @@ body {
   opacity: 0;
   transition: opacity 0.1s;
 }
-.tab-row:hover .tab-actions { opacity: 1; }
+.tab-row:hover .tab-actions,
+.bin-row:hover .tab-actions { opacity: 1; }
 
 .tab-icon-btn {
   display: flex;
