@@ -6,6 +6,7 @@ import {
   createBin,
   deleteBin,
   deleteStashedTab,
+  deleteStashedTabs,
   listBins,
   listStashedTabs,
   openStashedTab,
@@ -101,6 +102,17 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
           const [id] = [...sel.selectedIds]
           setEditing({ kind: 'tab', id })
         }
+      } else if (combo === keybindings.delete) {
+        // Delete: remove the selected bin (its contents reparent) or the
+        // selected tabs.
+        if (sel.selectedBinId) {
+          e.preventDefault()
+          handleDeleteBin(sel.selectedBinId)
+          sel.clear()
+        } else if (sel.selectedIds.size > 0) {
+          e.preventDefault()
+          handleDeleteTabs([...sel.selectedIds])
+        }
       } else if (combo === keybindings.newBin) {
         e.preventDefault()
         handleNewBin()
@@ -132,6 +144,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     await deleteStashedTab(id)
     await refresh()
     sel.deselectTab(id)
+  }
+
+  const handleDeleteTabs = async (ids: string[]) => {
+    await deleteStashedTabs(ids)
+    await refresh()
+    ids.forEach(sel.deselectTab)
   }
 
   const handleOpen = (tab: Tab) => openStashedTab(tab)
