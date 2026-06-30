@@ -54,7 +54,7 @@ export async function openStashedTab(tab: Tab): Promise<void> {
 
 // Open the tab manager in its own full browser tab (more room for organizing).
 export async function openFullView(): Promise<void> {
-  await openExtensionPage('popup.html')
+  await openExtensionPage('popup.html?view=full')
 }
 
 // Stash every normal (http/https) tab in the current window into a new
