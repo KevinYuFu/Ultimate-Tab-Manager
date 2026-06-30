@@ -56,7 +56,7 @@ export async function openStashedTab(tab: Tab): Promise<void> {
 // was nothing to stash). chrome:// / new-tab pages are skipped.
 export async function stashAllTabs(): Promise<string | null> {
   const open = await getTabsInCurrentWindow()
-  const stashable = open.filter(t => t.url && /^https?:/i.test(t.url))
+  const stashable = open.filter(t => t.url && !t.pinned && /^https?:/i.test(t.url))
   if (stashable.length === 0) return null
 
   const bins = await getBins()
