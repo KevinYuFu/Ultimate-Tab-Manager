@@ -13,6 +13,7 @@ import {
   closeTabs,
   getActiveTab,
   getTabsInCurrentWindow,
+  openExtensionPage,
   openUrl,
 } from './tabs'
 import { smartName } from './smartName'
@@ -49,6 +50,11 @@ export async function stashActiveTab(): Promise<Tab[]> {
 
 export async function openStashedTab(tab: Tab): Promise<void> {
   await openUrl(tab.url)
+}
+
+// Open the tab manager in its own full browser tab (more room for organizing).
+export async function openFullView(): Promise<void> {
+  await openExtensionPage('popup.html')
 }
 
 // Stash every normal (http/https) tab in the current window into a new
@@ -99,6 +105,15 @@ export async function renameStashedTab(id: string, name: string): Promise<Tab[]>
 export async function deleteStashedTab(id: string): Promise<Tab[]> {
   const tabs = await getStashedTabs()
   const updated = tabs.filter(t => t.id !== id)
+  await saveStashedTabs(updated)
+  return updated
+}
+
+// Delete several tabs in one write (a per-id loop would race on the shared list).
+export async function deleteStashedTabs(ids: string[]): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  const remove = new Set(ids)
+  const updated = tabs.filter(t => !remove.has(t.id))
   await saveStashedTabs(updated)
   return updated
 }
