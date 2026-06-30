@@ -103,6 +103,15 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
   return updated
 }
 
+// Delete several tabs in one write (a per-id loop would race on the shared list).
+export async function deleteStashedTabs(ids: string[]): Promise<Tab[]> {
+  const tabs = await getStashedTabs()
+  const remove = new Set(ids)
+  const updated = tabs.filter(t => !remove.has(t.id))
+  await saveStashedTabs(updated)
+  return updated
+}
+
 // Reorder a tab relative to a sibling, adopting that sibling's bin (so dropping
 // a tab among a bin's tabs also moves it into that bin). Returns the new order.
 export async function reorderTabs(
