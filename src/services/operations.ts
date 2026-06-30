@@ -56,6 +56,7 @@ export async function openStashedTab(tab: Tab): Promise<void> {
 // was nothing to stash). chrome:// / new-tab pages are skipped.
 export async function stashAllTabs(): Promise<string | null> {
   const open = await getTabsInCurrentWindow()
+  // Skip pinned tabs: a pinned tab is a deliberate "keep this open" signal.
   const stashable = open.filter(t => t.url && !t.pinned && /^https?:/i.test(t.url))
   if (stashable.length === 0) return null
 
