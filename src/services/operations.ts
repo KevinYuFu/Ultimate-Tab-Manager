@@ -13,6 +13,7 @@ import {
   closeTabs,
   getActiveTab,
   getTabsInCurrentWindow,
+  openExtensionPage,
   openUrl,
 } from './tabs'
 import { smartName } from './smartName'
@@ -49,6 +50,11 @@ export async function stashActiveTab(): Promise<Tab[]> {
 
 export async function openStashedTab(tab: Tab): Promise<void> {
   await openUrl(tab.url)
+}
+
+// Open the tab manager in its own full browser tab (more room for organizing).
+export async function openFullView(): Promise<void> {
+  await openExtensionPage('popup.html')
 }
 
 // Stash every normal (http/https) tab in the current window into a new

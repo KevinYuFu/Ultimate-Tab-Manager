@@ -9,6 +9,7 @@ import {
   deleteStashedTabs,
   listBins,
   listStashedTabs,
+  openFullView,
   openStashedTab,
   renameBin,
   renameStashedTab,
@@ -116,6 +117,9 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
       } else if (combo === keybindings.newBin) {
         e.preventDefault()
         handleNewBin()
+      } else if (combo === keybindings.openFullView) {
+        e.preventDefault()
+        openFullView()
       } else if (combo === keybindings.stash) {
         e.preventDefault()
         handleStash()
@@ -192,6 +196,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     stash: handleStash,
     stashAll: handleStashAll,
     newBin: handleNewBin,
+    openFullView: openFullView,
   }
 
   // A tab renders with an insertion line before or after it when it's the

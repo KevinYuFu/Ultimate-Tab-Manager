@@ -20,3 +20,8 @@ export async function closeTabs(tabIds: number[]): Promise<void> {
 export async function openUrl(url: string): Promise<void> {
   await chrome.tabs.create({ url })
 }
+
+// Open one of the extension's own pages (e.g. the popup) in a full browser tab.
+export async function openExtensionPage(page: string): Promise<void> {
+  await chrome.tabs.create({ url: chrome.runtime.getURL(page) })
+}
