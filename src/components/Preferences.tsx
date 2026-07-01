@@ -9,6 +9,7 @@ const OPERATION_LABELS: { op: Operation; label: string }[] = [
   { op: 'stashAll',     label: 'Stash all tabs' },
   { op: 'newBin',       label: 'New bin' },
   { op: 'open',         label: 'Open tab(s)' },
+  { op: 'goBack',       label: 'Go back a scope' },
   { op: 'editName',     label: 'Edit tab name' },
   { op: 'delete',       label: 'Delete' },
   { op: 'openFullView', label: 'Open full view' },

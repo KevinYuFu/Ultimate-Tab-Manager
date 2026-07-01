@@ -201,10 +201,23 @@ export default function Navigator({
     setScope(tab.binId)
   }
 
-  // Number key (1–9): act on the Nth item in scope — enter a bin, select a tab.
+  // Number key (1–9): act on the Nth item in scope. A bin is entered; a tab is
+  // selected, or opened if it was already the selection (press-again to open).
   const quickSelect = (item: { kind: 'bin' | 'tab'; id: string }) => {
-    if (item.kind === 'bin') enterBin(item.id)
-    else sel.selectTabId(item.id)
+    if (item.kind === 'bin') {
+      enterBin(item.id)
+    } else if (sel.selectedIds.has(item.id)) {
+      const tab = tabs.find(t => t.id === item.id)
+      if (tab) openStashedTab(tab)
+    } else {
+      sel.selectTabId(item.id)
+    }
+  }
+
+  // Go back = move the scope out to its parent (root does nothing).
+  const handleGoBack = () => {
+    if (scope === null) return
+    setScope(bins.find(b => b.id === scope)?.parentId ?? null)
   }
 
   const handleDeleteBin = async (id: string) => {
@@ -275,6 +288,7 @@ export default function Navigator({
     editName: handleEditSelection,
     delete: handleDeleteSelection,
     open: handleOpenSelection,
+    goBack: handleGoBack,
     undo: handleUndo,
     redo: handleRedo,
   }
@@ -445,10 +459,10 @@ export default function Navigator({
       </div>
 
       <div className="status-bar">
-        <span className="status-item"><kbd className="status-kbd">↑↓</kbd>navigate</span>
-        <span className="status-item"><kbd className="status-kbd">↵</kbd>open</span>
-        <span className="status-item"><kbd className="status-kbd">⌫</kbd>delete</span>
-        <span className="status-item"><kbd className="status-kbd">Esc</kbd>close</span>
+        <span className="status-item"><kbd className="status-kbd">1–9</kbd>select</span>
+        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.open)}</kbd>open</span>
+        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.goBack)}</kbd>back</span>
+        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.delete)}</kbd>delete</span>
       </div>
 
     </div>
