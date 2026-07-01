@@ -20,6 +20,8 @@ type Props = {
   onThemeChange: (theme: Theme) => void
   keybindings: Keybindings
   onKeybindingsChange: (keybindings: Keybindings) => void
+  stashAllOpensFullView: boolean
+  onStashAllOpensFullViewChange: (value: boolean) => void
   onBack: () => void
 }
 
@@ -28,6 +30,8 @@ export default function Preferences({
   onThemeChange,
   keybindings,
   onKeybindingsChange,
+  stashAllOpensFullView,
+  onStashAllOpensFullViewChange,
   onBack,
 }: Props) {
   const [editingOp, setEditingOp] = useState<Operation | null>(null)
@@ -92,6 +96,26 @@ export default function Preferences({
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="prefs-section">
+          <div className="prefs-section-label">Stash All</div>
+          <div className="segmented">
+            <button
+              className={`segmented-option${stashAllOpensFullView ? ' selected' : ''}`}
+              onClick={() => onStashAllOpensFullViewChange(true)}
+            >
+              <span className="segmented-title">Open full view</span>
+              <span className="segmented-desc">Stash all, then open this app in a new tab.</span>
+            </button>
+            <button
+              className={`segmented-option${!stashAllOpensFullView ? ' selected' : ''}`}
+              onClick={() => onStashAllOpensFullViewChange(false)}
+            >
+              <span className="segmented-title">Just close tabs</span>
+              <span className="segmented-desc">Stash all and close the tabs — nothing opens.</span>
+            </button>
           </div>
         </div>
 

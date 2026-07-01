@@ -44,10 +44,15 @@ type Editing = { kind: 'tab' | 'bin'; id: string } | null
 
 type Props = {
   keybindings: Keybindings
+  stashAllOpensFullView: boolean
   onOpenPreferences: () => void
 }
 
-export default function Navigator({ keybindings, onOpenPreferences }: Props) {
+export default function Navigator({
+  keybindings,
+  stashAllOpensFullView,
+  onOpenPreferences,
+}: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [bins, setBins] = useState<Bin[]>([])
   const [editing, setEditing] = useState<Editing>(null)
@@ -90,9 +95,9 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     await refresh()
     if (binId) {
       setExpanded(prev => new Set(prev).add(binId))
-      // Stashing all clears the window, so from the popup land the user on the
-      // Full View to see the result. (Already there when in Full View.)
-      if (!isFullView) await openFullView()
+      // Stashing all clears the window; when enabled, land the user on the Full
+      // View to see the result. (Skipped when already in Full View.)
+      if (stashAllOpensFullView && !isFullView) await openFullView()
     }
   }
 
