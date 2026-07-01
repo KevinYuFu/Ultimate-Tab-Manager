@@ -15,19 +15,23 @@ export type Bin = {
   parentId: string | null
 }
 
-// Where a tab / bin sits: its position in the list and its parent. A move is
-// fully described by a "from" spot and a "to" spot.
-export type TabSpot = { index: number; binId: string | null }
+// Where a bin sits: its position in the list and its parent. A bin move is fully
+// described by a "from" spot and a "to" spot.
 export type BinSpot = { index: number; parentId: string | null }
+
+// A tab (or several) at a position: the full tab record plus its index. A tab
+// move records the moved tabs' "from" snapshot and their "to" snapshot, which
+// also captures their binId — so one command covers single- and multi-tab moves.
+export type TabAt = { tab: Tab; index: number }
 
 // A reversible edit for the history. Each command carries what it needs to go
 // BOTH ways, so undo and redo are the same command read in opposite directions
 // (see services/history.ts). Stashing is intentionally NOT reversible — history
 // is for managing what's already stashed, not for the capture itself.
 export type Command =
-  | { type: 'removeTabs'; items: { tab: Tab; index: number }[] }
+  | { type: 'removeTabs'; items: TabAt[] }
   | { type: 'renameTab'; id: string; from: string; to: string }
-  | { type: 'moveTab'; id: string; from: TabSpot; to: TabSpot }
+  | { type: 'moveTabs'; from: TabAt[]; to: TabAt[] }
   | { type: 'createBin'; bin: Bin; index: number }
   | { type: 'renameBin'; id: string; from: string; to: string }
   | { type: 'moveBin'; id: string; from: BinSpot; to: BinSpot }

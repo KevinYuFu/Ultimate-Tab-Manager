@@ -9,7 +9,7 @@
 // `record*` helper, which captures the "before" state and stores the command.
 // The base operations stay pure — they don't know history exists.
 
-import type { BinSpot, Command, TabSpot } from '../types'
+import type { BinSpot, Command, TabAt } from '../types'
 import {
   getBins,
   getHistory,
@@ -87,14 +87,18 @@ async function apply(command: Command, direction: 'undo' | 'redo'): Promise<void
       await saveBins(bins.map(b => (b.id === command.id ? { ...b, name } : b)))
       break
     }
-    case 'moveTab': {
-      const spot = direction === 'redo' ? command.to : command.from
-      const tabs = await getStashedTabs()
-      const tab = tabs.find(t => t.id === command.id)
-      if (!tab) break
-      const rest = tabs.filter(t => t.id !== command.id)
-      rest.splice(Math.min(spot.index, rest.length), 0, { ...tab, binId: spot.binId })
-      await saveStashedTabs(rest)
+    case 'moveTabs': {
+      // Take the target snapshot (from = undo, to = redo), drop those tabs from
+      // the current list, then re-insert the snapshot at its recorded indices
+      // ascending. The snapshot carries each tab's binId, so bin changes ride
+      // along. Works for one tab or many.
+      const target = direction === 'redo' ? command.to : command.from
+      const ids = new Set(target.map(x => x.tab.id))
+      const tabs = (await getStashedTabs()).filter(t => !ids.has(t.id))
+      for (const { tab, index } of [...target].sort((a, b) => a.index - b.index)) {
+        tabs.splice(Math.min(index, tabs.length), 0, tab)
+      }
+      await saveStashedTabs(tabs)
       break
     }
     case 'moveBin': {
@@ -175,12 +179,12 @@ export async function recordDeleteBin(id: string): Promise<void> {
   })
 }
 
-// Moves need a before/after spot. Capture the spot with tabSpot/binSpot before
-// running the move op, then hand it to recordTabMove/recordBinMove afterwards.
-export async function tabSpot(id: string): Promise<TabSpot> {
+// Moves need a before/after snapshot. Capture it (tabsSnapshot/binSpot) before
+// running the move op, then hand it to recordTabsMove/recordBinMove afterwards.
+export async function tabsSnapshot(ids: string[]): Promise<TabAt[]> {
+  const wanted = new Set(ids)
   const tabs = await getStashedTabs()
-  const index = tabs.findIndex(t => t.id === id)
-  return { index, binId: index === -1 ? null : tabs[index].binId }
+  return tabs.map((tab, index) => ({ tab, index })).filter(({ tab }) => wanted.has(tab.id))
 }
 
 export async function binSpot(id: string): Promise<BinSpot> {
@@ -189,10 +193,12 @@ export async function binSpot(id: string): Promise<BinSpot> {
   return { index, parentId: index === -1 ? null : bins[index].parentId }
 }
 
-export async function recordTabMove(id: string, from: TabSpot): Promise<void> {
-  const to = await tabSpot(id)
-  if (to.index === -1 || (to.index === from.index && to.binId === from.binId)) return
-  await record({ type: 'moveTab', id, from, to })
+// Record a tab move (one or many). `from` is the snapshot captured before the
+// move; we snapshot "after" here and store both. No-op moves are ignored.
+export async function recordTabsMove(ids: string[], from: TabAt[]): Promise<void> {
+  const to = await tabsSnapshot(ids)
+  if (JSON.stringify(from) === JSON.stringify(to)) return
+  await record({ type: 'moveTabs', from, to })
 }
 
 export async function recordBinMove(id: string, from: BinSpot): Promise<void> {

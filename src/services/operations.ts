@@ -122,40 +122,44 @@ export async function deleteStashedTabs(ids: string[]): Promise<Tab[]> {
   return updated
 }
 
-// Reorder a tab relative to a sibling, adopting that sibling's bin (so dropping
-// a tab among a bin's tabs also moves it into that bin). Returns the new order.
+// Reorder one or more tabs next to a sibling, adopting that sibling's bin (so
+// dropping among a bin's tabs also moves them into that bin). The dragged tabs
+// keep their current relative order and land contiguously. Returns the new order.
 export async function reorderTabs(
-  draggedId: string,
+  draggedIds: string[],
   targetId: string,
   placeAfter: boolean,
 ): Promise<Tab[]> {
   const tabs = await getStashedTabs()
-  if (draggedId === targetId) return tabs
-  const dragged = tabs.find(t => t.id === draggedId)
+  const set = new Set(draggedIds)
+  if (set.has(targetId)) return tabs // can't drop a selection onto one of its own
   const target = tabs.find(t => t.id === targetId)
-  if (!dragged || !target) return tabs
+  if (!target) return tabs
 
-  const moved: Tab = { ...dragged, binId: target.binId }
-  const rest = tabs.filter(t => t.id !== draggedId)
+  const moving = tabs.filter(t => set.has(t.id)).map(t => ({ ...t, binId: target.binId }))
+  if (moving.length === 0) return tabs
+  const rest = tabs.filter(t => !set.has(t.id))
   let idx = rest.findIndex(t => t.id === targetId)
   if (idx === -1) return tabs
   if (placeAfter) idx += 1
 
-  rest.splice(idx, 0, moved)
+  rest.splice(idx, 0, ...moving)
   await saveStashedTabs(rest)
   return rest
 }
 
-// Move a tab into a bin (or to root when binId is null), placed at the end.
-export async function moveTabToBin(tabId: string, binId: string | null): Promise<Tab[]> {
+// Move one or more tabs into a bin (or to root when binId is null), placed at
+// the end in their current relative order.
+export async function moveTabsToBin(tabIds: string[], binId: string | null): Promise<Tab[]> {
   const tabs = await getStashedTabs()
-  const dragged = tabs.find(t => t.id === tabId)
-  if (!dragged || dragged.binId === binId) return tabs
+  const set = new Set(tabIds)
+  const moving = tabs.filter(t => set.has(t.id))
+  if (moving.length === 0) return tabs
 
-  const rest = tabs.filter(t => t.id !== tabId)
-  rest.push({ ...dragged, binId })
-  await saveStashedTabs(rest)
-  return rest
+  const rest = tabs.filter(t => !set.has(t.id))
+  const updated = [...rest, ...moving.map(t => ({ ...t, binId }))]
+  await saveStashedTabs(updated)
+  return updated
 }
 
 // ── Bins (slice 1: create / rename / delete) ──
