@@ -100,21 +100,20 @@ export default function Preferences({
         </div>
 
         <div className="prefs-section">
-          <div className="prefs-section-label">Stash All</div>
-          <div className="segmented">
+          <div className="setting-row">
+            <div className="setting-text">
+              <span className="setting-label">Display Manager After Stash All</span>
+              <span className="setting-desc">Open this app in a new tab after stashing all tabs.</span>
+            </div>
             <button
-              className={`segmented-option${stashAllOpensFullView ? ' selected' : ''}`}
-              onClick={() => onStashAllOpensFullViewChange(true)}
+              type="button"
+              role="switch"
+              aria-checked={stashAllOpensFullView}
+              aria-label="Display Manager After Stash All"
+              className={`switch${stashAllOpensFullView ? ' on' : ''}`}
+              onClick={() => onStashAllOpensFullViewChange(!stashAllOpensFullView)}
             >
-              <span className="segmented-title">Open full view</span>
-              <span className="segmented-desc">Stash all, then open this app in a new tab.</span>
-            </button>
-            <button
-              className={`segmented-option${!stashAllOpensFullView ? ' selected' : ''}`}
-              onClick={() => onStashAllOpensFullViewChange(false)}
-            >
-              <span className="segmented-title">Just close tabs</span>
-              <span className="segmented-desc">Stash all and close the tabs — nothing opens.</span>
+              <span className="switch-knob" />
             </button>
           </div>
         </div>
