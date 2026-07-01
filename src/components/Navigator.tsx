@@ -76,62 +76,6 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     setEditing({ kind: 'bin', id: bin.id })
   }
 
-  // Keyboard: open selected tabs, edit the selected tab, create a bin.
-  // While an inline rename is active, the input handles its own keys.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (editing) return
-      const combo = captureKey(e)
-      if (!combo) return
-
-      if (combo === keybindings.open) {
-        // Open: a selected bin expands/collapses; selected tabs open in browser.
-        if (sel.selectedBinId) {
-          e.preventDefault()
-          handleOpenBin(sel.selectedBinId)
-        } else if (sel.selectedIds.size > 0) {
-          e.preventDefault()
-          tabs.filter(t => sel.selectedIds.has(t.id)).forEach(openStashedTab)
-        }
-      } else if (combo === keybindings.editName) {
-        // Edit: rename the selected bin, or the single selected tab.
-        if (sel.selectedBinId) {
-          e.preventDefault()
-          setEditing({ kind: 'bin', id: sel.selectedBinId })
-        } else if (sel.selectedIds.size === 1) {
-          e.preventDefault()
-          const [id] = [...sel.selectedIds]
-          setEditing({ kind: 'tab', id })
-        }
-      } else if (combo === keybindings.delete) {
-        // Delete: remove the selected bin (its contents reparent) or the
-        // selected tabs.
-        if (sel.selectedBinId) {
-          e.preventDefault()
-          handleDeleteBin(sel.selectedBinId)
-          sel.clear()
-        } else if (sel.selectedIds.size > 0) {
-          e.preventDefault()
-          handleDeleteTabs([...sel.selectedIds])
-        }
-      } else if (combo === keybindings.newBin) {
-        e.preventDefault()
-        handleNewBin()
-      } else if (combo === keybindings.openFullView) {
-        e.preventDefault()
-        openFullView()
-      } else if (combo === keybindings.stash) {
-        e.preventDefault()
-        handleStash()
-      } else if (combo === keybindings.stashAll) {
-        e.preventDefault()
-        handleStashAll()
-      }
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [sel.selectedIds, sel.selectedBinId, tabs, editing, keybindings])
-
   const handleStash = async () => {
     await stashActiveTab()
     await refresh()
@@ -192,12 +136,64 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
   const cancelEdit = () => setEditing(null)
 
+  // ── Selection-aware operations ──
+  // These act on the current selection so the keyboard and the toolbar buttons
+  // share one behaviour. "Open"/"Edit"/"Delete" are type-specific (bin vs tab).
+  const handleOpenSelection = () => {
+    if (sel.selectedBinId) handleOpenBin(sel.selectedBinId)
+    else tabs.filter(t => sel.selectedIds.has(t.id)).forEach(openStashedTab)
+  }
+
+  const handleEditSelection = () => {
+    if (sel.selectedBinId) setEditing({ kind: 'bin', id: sel.selectedBinId })
+    else if (sel.selectedIds.size === 1) {
+      const [id] = [...sel.selectedIds]
+      setEditing({ kind: 'tab', id })
+    }
+  }
+
+  const handleDeleteSelection = () => {
+    if (sel.selectedBinId) {
+      handleDeleteBin(sel.selectedBinId)
+      sel.clear()
+    } else if (sel.selectedIds.size > 0) {
+      handleDeleteTabs([...sel.selectedIds])
+    }
+  }
+
+  // Single source of truth for both the toolbar buttons and the keyboard
+  // handler below. Adding an op here wires up its hotkey automatically; an op
+  // with no handler (e.g. undo) stays inert and its button renders disabled.
   const handlers: Partial<Record<Operation, () => void>> = {
     stash: handleStash,
     stashAll: handleStashAll,
     newBin: handleNewBin,
     openFullView: openFullView,
+    editName: handleEditSelection,
+    delete: handleDeleteSelection,
+    open: handleOpenSelection,
+    // undo: not yet implemented — needs an action-history stack.
   }
+
+  // Keyboard: match the pressed combo against the user's keybindings and run
+  // the matching handler. While an inline rename is active, the input owns its
+  // keys, so we bail early.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (editing) return
+      const combo = captureKey(e)
+      if (!combo) return
+      const op = (Object.keys(keybindings) as Operation[]).find(
+        o => keybindings[o] === combo,
+      )
+      const handler = op && handlers[op]
+      if (!handler) return
+      e.preventDefault()
+      handler()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handlers, editing, keybindings])
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
@@ -321,7 +317,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
 
       <div className="action-bar">
         {SECONDARY.map(({ op, label }) => (
-          <button key={op} className="action-btn" onClick={handlers[op]}>
+          <button
+            key={op}
+            className="action-btn"
+            onClick={handlers[op]}
+            disabled={!handlers[op]}
+          >
             <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
             <span>{label}</span>
           </button>

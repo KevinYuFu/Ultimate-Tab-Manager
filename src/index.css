@@ -424,6 +424,15 @@ body.full-view .app {
   background: var(--hover);
 }
 .action-btn:active { opacity: 0.75; transform: scale(0.98); }
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.action-btn:disabled:hover {
+  color: var(--text-2);
+  border-color: var(--border-md);
+  background: var(--surface);
+}
 
 /* Status bar */
 .status-bar {
