@@ -20,6 +20,8 @@ type Props = {
   onThemeChange: (theme: Theme) => void
   keybindings: Keybindings
   onKeybindingsChange: (keybindings: Keybindings) => void
+  stashAllOpensFullView: boolean
+  onStashAllOpensFullViewChange: (value: boolean) => void
   onBack: () => void
 }
 
@@ -28,6 +30,8 @@ export default function Preferences({
   onThemeChange,
   keybindings,
   onKeybindingsChange,
+  stashAllOpensFullView,
+  onStashAllOpensFullViewChange,
   onBack,
 }: Props) {
   const [editingOp, setEditingOp] = useState<Operation | null>(null)
@@ -92,6 +96,26 @@ export default function Preferences({
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="prefs-section">
+          <div className="prefs-section-label">Behaviour</div>
+          <div className="setting-row">
+            <div className="setting-text">
+              <span className="setting-label">Display Manager After Stash All</span>
+              <span className="setting-desc">Open the full-screen manager in a new tab when you stash all tabs.</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={stashAllOpensFullView}
+              aria-label="Display Manager After Stash All"
+              className={`switch${stashAllOpensFullView ? ' on' : ''}`}
+              onClick={() => onStashAllOpensFullViewChange(!stashAllOpensFullView)}
+            >
+              <span className="switch-knob" />
+            </button>
           </div>
         </div>
 
