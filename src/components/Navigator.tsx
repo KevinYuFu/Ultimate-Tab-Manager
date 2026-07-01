@@ -15,8 +15,16 @@ import {
   renameStashedTab,
   stashActiveTab,
   stashAllTabs,
-  undo,
 } from '../services/operations'
+import {
+  recordCreateBin,
+  recordDeleteBin,
+  recordDeleteTabs,
+  recordRenameBin,
+  recordRenameTab,
+  redo,
+  undo,
+} from '../services/history'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
 import { useSelection } from '../hooks/useSelection'
 import BinRow from './BinRow'
@@ -34,6 +42,7 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'delete',       label: 'Delete' },
   { op: 'open',         label: 'Open' },
   { op: 'undo',         label: 'Undo' },
+  { op: 'redo',         label: 'Redo' },
 ]
 
 // True when this document is the standalone Full View tab (opened with
@@ -80,6 +89,7 @@ export default function Navigator({
 
   const handleNewBin = async () => {
     const bin = await createBin(null)
+    await recordCreateBin(bin)
     await refresh()
     setExpanded(prev => new Set(prev).add(bin.id))
     sel.selectBin(bin.id)
@@ -121,12 +131,14 @@ export default function Navigator({
 
   // ── Tabs ──
   const handleDeleteTab = async (id: string) => {
+    await recordDeleteTabs([id])
     await deleteStashedTab(id)
     await refresh()
     sel.deselectTab(id)
   }
 
   const handleDeleteTabs = async (ids: string[]) => {
+    await recordDeleteTabs(ids)
     await deleteStashedTabs(ids)
     await refresh()
     ids.forEach(sel.deselectTab)
@@ -138,6 +150,8 @@ export default function Navigator({
     setEditing(null)
     const trimmed = name.trim()
     if (!trimmed) return // ignore empty names; keep the existing one
+    const from = tabs.find(t => t.id === id)?.name ?? ''
+    await recordRenameTab(id, from, trimmed)
     await renameStashedTab(id, trimmed)
     await refresh()
   }
@@ -154,6 +168,7 @@ export default function Navigator({
   }
 
   const handleDeleteBin = async (id: string) => {
+    await recordDeleteBin(id)
     await deleteBin(id)
     await refresh()
   }
@@ -162,6 +177,8 @@ export default function Navigator({
     setEditing(null)
     const trimmed = name.trim()
     if (!trimmed) return
+    const from = bins.find(b => b.id === id)?.name ?? ''
+    await recordRenameBin(id, from, trimmed)
     await renameBin(id, trimmed)
     await refresh()
   }
@@ -200,6 +217,13 @@ export default function Navigator({
     }
   }
 
+  const handleRedo = async () => {
+    if (await redo()) {
+      sel.clear()
+      await refresh()
+    }
+  }
+
   // Single source of truth for both the toolbar buttons and the keyboard
   // handler below. Adding an op here wires up its hotkey automatically; an op
   // with no handler (e.g. undo) stays inert and its button renders disabled.
@@ -212,6 +236,7 @@ export default function Navigator({
     delete: handleDeleteSelection,
     open: handleOpenSelection,
     undo: handleUndo,
+    redo: handleRedo,
   }
 
   // Keyboard: match the pressed combo against the user's keybindings and run

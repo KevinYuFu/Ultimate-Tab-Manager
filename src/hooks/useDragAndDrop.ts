@@ -6,6 +6,7 @@ import {
   reorderBins,
   reorderTabs,
 } from '../services/operations'
+import { binSpot, recordBinMove, recordTabMove, tabSpot } from '../services/history'
 
 // The item being dragged — a tab or a bin.
 export type DragItem = { kind: 'tab' | 'bin'; id: string } | null
@@ -130,18 +131,22 @@ export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Para
     if (!item || !drop) return
 
     if (item.kind === 'tab') {
+      const from = await tabSpot(item.id) // capture before the move, for undo
       if (drop.kind === 'tab') await reorderTabs(item.id, drop.id, drop.after)
       else if (drop.kind === 'bin') {
         await moveTabToBin(item.id, drop.id)
         onNestInto?.(drop.id)
       } else if (drop.kind === 'root') await moveTabToBin(item.id, null)
+      await recordTabMove(item.id, from)
     } else {
+      const from = await binSpot(item.id)
       if (drop.kind === 'binReorder') await reorderBins(item.id, drop.id, drop.after)
       else if (drop.kind === 'bin') {
         await moveBin(item.id, drop.id)
         onNestInto?.(drop.id)
       } else if (drop.kind === 'root') await moveBin(item.id, null)
       // dropping a bin onto a tab does nothing
+      await recordBinMove(item.id, from)
     }
     await onChange()
   }

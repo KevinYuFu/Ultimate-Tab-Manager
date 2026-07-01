@@ -15,24 +15,27 @@ export type Bin = {
   parentId: string | null
 }
 
-// One reversible edit on the undo stack: the minimal data needed to invert a
-// single operation (a "delta"), rather than a full state snapshot.
-export type UndoEntry =
-  // Reverse a stash / stash-all: drop the added tabs (and any created bin) and
-  // reopen the browser tabs that stashing had closed.
-  | { kind: 'unstash'; tabIds: string[]; binIds: string[]; urls: string[] }
-  // Reverse a delete: re-insert the removed tabs at their original indices.
-  | { kind: 'restoreTabs'; tabs: { tab: Tab; index: number }[] }
-  // Reverse a bin delete: re-insert the bin and re-adopt its former children.
-  | { kind: 'restoreBin'; bin: Bin; index: number; childBinIds: string[]; childTabIds: string[] }
-  // Reverse a bin create: remove it.
-  | { kind: 'removeBin'; id: string }
-  | { kind: 'renameTab'; id: string; name: string }
-  | { kind: 'renameBin'; id: string; name: string }
-  // Reverse a tab move/reorder: put the tab back at its old index and bin.
-  | { kind: 'moveTab'; id: string; index: number; binId: string | null }
-  // Reverse a bin move/reorder: put the bin back at its old index and parent.
-  | { kind: 'moveBin'; id: string; index: number; parentId: string | null }
+// Where a tab / bin sits: its position in the list and its parent. A move is
+// fully described by a "from" spot and a "to" spot.
+export type TabSpot = { index: number; binId: string | null }
+export type BinSpot = { index: number; parentId: string | null }
+
+// A reversible edit for the history. Each command carries what it needs to go
+// BOTH ways, so undo and redo are the same command read in opposite directions
+// (see services/history.ts). Stashing is intentionally NOT reversible — history
+// is for managing what's already stashed, not for the capture itself.
+export type Command =
+  | { type: 'removeTabs'; items: { tab: Tab; index: number }[] }
+  | { type: 'renameTab'; id: string; from: string; to: string }
+  | { type: 'moveTab'; id: string; from: TabSpot; to: TabSpot }
+  | { type: 'createBin'; bin: Bin; index: number }
+  | { type: 'renameBin'; id: string; from: string; to: string }
+  | { type: 'moveBin'; id: string; from: BinSpot; to: BinSpot }
+  | { type: 'deleteBin'; bin: Bin; index: number; childTabIds: string[]; childBinIds: string[] }
+
+// The whole undo/redo history: a flat list plus a cursor. commands[0..cursor-1]
+// are done (undoable); commands[cursor..] are undone (redoable).
+export type History = { commands: Command[]; cursor: number }
 
 // The operations the user can perform in the app.
 export type Operation =
@@ -44,6 +47,7 @@ export type Operation =
   | 'delete'
   | 'open'
   | 'undo'
+  | 'redo'
 
 // Maps each operation to the key that triggers it.
 export type Keybindings = Record<Operation, string>
@@ -57,6 +61,7 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   delete: 'Backspace',
   open: 'Enter',
   undo: 'Ctrl+Z',
+  redo: 'Ctrl+Shift+Z',
 }
 
 // Whether "Stash all" opens the Full View afterwards, or just closes the tabs.
