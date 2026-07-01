@@ -13,6 +13,7 @@ const OPERATION_LABELS: { op: Operation; label: string }[] = [
   { op: 'delete',       label: 'Delete' },
   { op: 'openFullView', label: 'Open full view' },
   { op: 'undo',         label: 'Undo' },
+  { op: 'redo',         label: 'Redo' },
 ]
 
 type Props = {

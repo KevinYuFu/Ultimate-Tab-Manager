@@ -4,9 +4,11 @@
 import type { Bin, Tab, UndoEntry } from '../types'
 import {
   getBins,
+  getRedoStack,
   getStashedTabs,
   getUndoStack,
   saveBins,
+  saveRedoStack,
   saveStashedTabs,
   saveUndoStack,
 } from './storage'
@@ -23,47 +25,99 @@ import { smartName } from './smartName'
 // How many undo steps we keep. Each entry is a small delta, not a full snapshot.
 const MAX_UNDO = 25
 
-// Push the inverse of an operation onto the undo stack (persisted, so undo
-// survives the popup closing).
+// Record the inverse of a fresh user action onto the undo stack (persisted, so
+// undo survives the popup closing). A new action invalidates any redo history.
 async function pushUndo(entry: UndoEntry): Promise<void> {
   const stack = await getUndoStack()
   const next = [...stack, entry]
   while (next.length > MAX_UNDO) next.shift()
   await saveUndoStack(next)
+  await saveRedoStack([])
 }
 
-// Undo the last operation by applying its inverse delta. Returns true if
-// something was undone.
+// Undo and redo are the same move in opposite directions: pop the top entry of
+// one stack, apply it (which returns the entry that reverses it), and push that
+// onto the other stack. applyUndo is the whole engine — one model, both ways.
 export async function undo(): Promise<boolean> {
-  const stack = await getUndoStack()
-  const entry = stack[stack.length - 1]
+  const undoStack = await getUndoStack()
+  const entry = undoStack[undoStack.length - 1]
   if (!entry) return false
-  await saveUndoStack(stack.slice(0, -1))
-  await applyUndo(entry)
+  await saveUndoStack(undoStack.slice(0, -1))
+  const inverse = await applyUndo(entry)
+  const redoStack = await getRedoStack()
+  await saveRedoStack([...redoStack, inverse])
   return true
 }
 
-// Apply one inverse delta. Each case reverses exactly the mutation that
-// recorded it; splices use the recorded original index so order is restored.
-async function applyUndo(entry: UndoEntry): Promise<void> {
+export async function redo(): Promise<boolean> {
+  const redoStack = await getRedoStack()
+  const entry = redoStack[redoStack.length - 1]
+  if (!entry) return false
+  await saveRedoStack(redoStack.slice(0, -1))
+  const inverse = await applyUndo(entry)
+  const undoStack = await getUndoStack()
+  await saveUndoStack([...undoStack, inverse])
+  return true
+}
+
+// Apply one entry and RETURN the entry that reverses it (computed from the state
+// as it is just before applying). Every kind returns its paired kind, so the
+// result feeds straight back onto the opposite stack — that's what makes redo
+// free. Splices use recorded indices so order is restored exactly.
+async function applyUndo(entry: UndoEntry): Promise<UndoEntry> {
   switch (entry.kind) {
     case 'unstash': {
       const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
       const dropTabs = new Set(entry.tabIds)
       const dropBins = new Set(entry.binIds)
+      // Capture what we remove (with positions) so 'restore' can put it back.
+      const removedTabs = tabs
+        .map((tab, index) => ({ tab, index }))
+        .filter(({ tab }) => dropTabs.has(tab.id))
+      const removedBins = bins
+        .map((bin, index) => ({ bin, index }))
+        .filter(({ bin }) => dropBins.has(bin.id))
       await saveStashedTabs(tabs.filter(t => !dropTabs.has(t.id)))
       if (entry.binIds.length) await saveBins(bins.filter(b => !dropBins.has(b.id)))
       for (const url of entry.urls) await openUrl(url)
-      break
+      return { kind: 'restore', tabs: removedTabs, bins: removedBins }
     }
-    case 'restoreTabs': {
-      const tabs = await getStashedTabs()
+    case 'restore': {
+      const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
       // Ascending index so each insert lands before the next one shifts things.
       for (const { tab, index } of [...entry.tabs].sort((a, b) => a.index - b.index)) {
         tabs.splice(Math.min(index, tabs.length), 0, tab)
       }
+      for (const { bin, index } of [...entry.bins].sort((a, b) => a.index - b.index)) {
+        bins.splice(Math.min(index, bins.length), 0, bin)
+      }
       await saveStashedTabs(tabs)
-      break
+      if (entry.bins.length) await saveBins(bins)
+      return {
+        kind: 'unstash',
+        tabIds: entry.tabs.map(t => t.tab.id),
+        binIds: entry.bins.map(b => b.bin.id),
+        urls: [], // these tabs live in storage, not the browser — nothing to reopen
+      }
+    }
+    case 'deleteBin': {
+      const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
+      const index = bins.findIndex(b => b.id === entry.id)
+      if (index === -1) return entry
+      const target = bins[index]
+      // Capture the children we're about to reparent, so restore can re-adopt.
+      const childBinIds = bins.filter(b => b.parentId === entry.id).map(b => b.id)
+      const childTabIds = tabs.filter(t => t.binId === entry.id).map(t => t.id)
+      const newParent = target.parentId
+      await saveBins(
+        bins
+          .filter(b => b.id !== entry.id)
+          .map(b => (b.parentId === entry.id ? { ...b, parentId: newParent } : b)),
+      )
+      await saveStashedTabs(
+        tabs.map(t => (t.binId === entry.id ? { ...t, binId: newParent } : t)),
+      )
+      return { kind: 'restoreBin', bin: target, index, childBinIds, childTabIds }
     }
     case 'restoreBin': {
       const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
@@ -74,40 +128,43 @@ async function applyUndo(entry: UndoEntry): Promise<void> {
       await saveStashedTabs(
         tabs.map(t => (kidTabs.has(t.id) ? { ...t, binId: entry.bin.id } : t)),
       )
-      break
-    }
-    case 'removeBin': {
-      const bins = await getBins()
-      await saveBins(bins.filter(b => b.id !== entry.id))
-      break
+      return { kind: 'deleteBin', id: entry.bin.id }
     }
     case 'renameTab': {
       const tabs = await getStashedTabs()
+      const current = tabs.find(t => t.id === entry.id)
+      const prevName = current?.name ?? entry.name
       await saveStashedTabs(tabs.map(t => (t.id === entry.id ? { ...t, name: entry.name } : t)))
-      break
+      return { kind: 'renameTab', id: entry.id, name: prevName }
     }
     case 'renameBin': {
       const bins = await getBins()
+      const current = bins.find(b => b.id === entry.id)
+      const prevName = current?.name ?? entry.name
       await saveBins(bins.map(b => (b.id === entry.id ? { ...b, name: entry.name } : b)))
-      break
+      return { kind: 'renameBin', id: entry.id, name: prevName }
     }
     case 'moveTab': {
       const tabs = await getStashedTabs()
-      const tab = tabs.find(t => t.id === entry.id)
-      if (!tab) break
+      const from = tabs.findIndex(t => t.id === entry.id)
+      if (from === -1) return entry
+      const tab = tabs[from]
+      const inverse: UndoEntry = { kind: 'moveTab', id: entry.id, index: from, binId: tab.binId }
       const rest = tabs.filter(t => t.id !== entry.id)
       rest.splice(Math.min(entry.index, rest.length), 0, { ...tab, binId: entry.binId })
       await saveStashedTabs(rest)
-      break
+      return inverse
     }
     case 'moveBin': {
       const bins = await getBins()
-      const bin = bins.find(b => b.id === entry.id)
-      if (!bin) break
+      const from = bins.findIndex(b => b.id === entry.id)
+      if (from === -1) return entry
+      const bin = bins[from]
+      const inverse: UndoEntry = { kind: 'moveBin', id: entry.id, index: from, parentId: bin.parentId }
       const rest = bins.filter(b => b.id !== entry.id)
       rest.splice(Math.min(entry.index, rest.length), 0, { ...bin, parentId: entry.parentId })
       await saveBins(rest)
-      break
+      return inverse
     }
   }
 }
@@ -214,7 +271,7 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
   const tabs = await getStashedTabs()
   const index = tabs.findIndex(t => t.id === id)
   if (index === -1) return tabs
-  await pushUndo({ kind: 'restoreTabs', tabs: [{ tab: tabs[index], index }] })
+  await pushUndo({ kind: 'restore', tabs: [{ tab: tabs[index], index }], bins: [] })
   const updated = tabs.filter(t => t.id !== id)
   await saveStashedTabs(updated)
   return updated
@@ -228,7 +285,7 @@ export async function deleteStashedTabs(ids: string[]): Promise<Tab[]> {
     .map((tab, index) => ({ tab, index }))
     .filter(({ tab }) => remove.has(tab.id))
   if (removed.length === 0) return tabs
-  await pushUndo({ kind: 'restoreTabs', tabs: removed })
+  await pushUndo({ kind: 'restore', tabs: removed, bins: [] })
   const updated = tabs.filter(t => !remove.has(t.id))
   await saveStashedTabs(updated)
   return updated
@@ -280,7 +337,7 @@ export async function createBin(parentId: string | null): Promise<Bin> {
   const bins = await getBins()
   const bin: Bin = { id: crypto.randomUUID(), name: 'New Bin', parentId }
   await saveBins([...bins, bin])
-  await pushUndo({ kind: 'removeBin', id: bin.id })
+  await pushUndo({ kind: 'deleteBin', id: bin.id })
   return bin
 }
 

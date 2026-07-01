@@ -15,6 +15,7 @@ import {
   renameStashedTab,
   stashActiveTab,
   stashAllTabs,
+  redo,
   undo,
 } from '../services/operations'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
@@ -34,6 +35,7 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'delete',       label: 'Delete' },
   { op: 'open',         label: 'Open' },
   { op: 'undo',         label: 'Undo' },
+  { op: 'redo',         label: 'Redo' },
 ]
 
 // True when this document is the standalone Full View tab (opened with
@@ -200,6 +202,13 @@ export default function Navigator({
     }
   }
 
+  const handleRedo = async () => {
+    if (await redo()) {
+      sel.clear()
+      await refresh()
+    }
+  }
+
   // Single source of truth for both the toolbar buttons and the keyboard
   // handler below. Adding an op here wires up its hotkey automatically; an op
   // with no handler (e.g. undo) stays inert and its button renders disabled.
@@ -212,6 +221,7 @@ export default function Navigator({
     delete: handleDeleteSelection,
     open: handleOpenSelection,
     undo: handleUndo,
+    redo: handleRedo,
   }
 
   // Keyboard: match the pressed combo against the user's keybindings and run
