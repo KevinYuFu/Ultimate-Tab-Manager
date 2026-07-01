@@ -15,6 +15,7 @@ import {
   renameStashedTab,
   stashActiveTab,
   stashAllTabs,
+  undo,
 } from '../services/operations'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
 import { useSelection } from '../hooks/useSelection'
@@ -161,6 +162,13 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     }
   }
 
+  const handleUndo = async () => {
+    if (await undo()) {
+      sel.clear()
+      await refresh()
+    }
+  }
+
   // Single source of truth for both the toolbar buttons and the keyboard
   // handler below. Adding an op here wires up its hotkey automatically; an op
   // with no handler (e.g. undo) stays inert and its button renders disabled.
@@ -172,7 +180,7 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     editName: handleEditSelection,
     delete: handleDeleteSelection,
     open: handleOpenSelection,
-    // undo: not yet implemented — needs an action-history stack.
+    undo: handleUndo,
   }
 
   // Keyboard: match the pressed combo against the user's keybindings and run
