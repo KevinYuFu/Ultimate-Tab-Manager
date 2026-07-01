@@ -35,15 +35,24 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'undo',         label: 'Undo' },
 ]
 
+// True when this document is the standalone Full View tab (opened with
+// ?view=full) rather than the toolbar popup.
+const isFullView = new URLSearchParams(window.location.search).get('view') === 'full'
+
 // What's currently being renamed inline — a tab or a bin.
 type Editing = { kind: 'tab' | 'bin'; id: string } | null
 
 type Props = {
   keybindings: Keybindings
+  stashAllOpensFullView: boolean
   onOpenPreferences: () => void
 }
 
-export default function Navigator({ keybindings, onOpenPreferences }: Props) {
+export default function Navigator({
+  keybindings,
+  stashAllOpensFullView,
+  onOpenPreferences,
+}: Props) {
   const [tabs, setTabs] = useState<Tab[]>([])
   const [bins, setBins] = useState<Bin[]>([])
   const [editing, setEditing] = useState<Editing>(null)
@@ -82,10 +91,32 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   }
 
   const handleStashAll = async () => {
+    // From the popup with the preference on, hand Stash All off to a freshly
+    // opened Full View tab (see the stash-on-open effect below). Stashing there
+    // is safe: closing the window's tabs can't tear down a normal tab the way it
+    // would this popup. The popup's only job is this one fire-and-forget call.
+    if (stashAllOpensFullView && !isFullView) {
+      await openFullView({ stashOnOpen: true })
+      return
+    }
     const binId = await stashAllTabs()
     await refresh()
     if (binId) setExpanded(prev => new Set(prev).add(binId))
   }
+
+  // If this is the Full View tab the popup opened to run Stash All (?stashOnOpen),
+  // do it now — from here the stash+close can't destroy our own context. Strip
+  // the flag first so a manual reload doesn't stash again.
+  useEffect(() => {
+    if (!isFullView) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('stashOnOpen') !== '1') return
+    params.delete('stashOnOpen')
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+    handleStashAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Tabs ──
   const handleDeleteTab = async (id: string) => {

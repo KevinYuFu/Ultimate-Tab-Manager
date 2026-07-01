@@ -40,9 +40,14 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   undo: 'Ctrl+Z',
 }
 
+// Whether "Stash all" opens the Full View afterwards, or just closes the tabs.
+// Defaults on so new users discover the Full View.
+export const DEFAULT_STASH_ALL_OPENS_FULL_VIEW = true
+
 export type Settings = {
   themeId: string
   keybindings: Keybindings
+  stashAllOpensFullView: boolean
   tabs: Tab[]
   bins: Bin[]
 }
