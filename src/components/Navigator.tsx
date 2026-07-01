@@ -41,8 +41,6 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'editName',     label: 'Edit Name' },
   { op: 'delete',       label: 'Delete' },
   { op: 'open',         label: 'Open' },
-  { op: 'undo',         label: 'Undo' },
-  { op: 'redo',         label: 'Redo' },
 ]
 
 // True when this document is the standalone Full View tab (opened with
