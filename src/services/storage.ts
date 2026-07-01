@@ -1,7 +1,8 @@
-import type { Bin, Tab } from '../types'
+import type { Bin, Snapshot, Tab } from '../types'
 
 const TABS_KEY = 'tabs'
 const BINS_KEY = 'bins'
+const UNDO_KEY = 'undoStack'
 
 export async function getStashedTabs(): Promise<Tab[]> {
   const result = await chrome.storage.local.get(TABS_KEY)
@@ -19,4 +20,13 @@ export async function getBins(): Promise<Bin[]> {
 
 export async function saveBins(bins: Bin[]): Promise<void> {
   await chrome.storage.local.set({ [BINS_KEY]: bins })
+}
+
+export async function getUndoStack(): Promise<Snapshot[]> {
+  const result = await chrome.storage.local.get(UNDO_KEY)
+  return (result[UNDO_KEY] as Snapshot[] | undefined) ?? []
+}
+
+export async function saveUndoStack(stack: Snapshot[]): Promise<void> {
+  await chrome.storage.local.set({ [UNDO_KEY]: stack })
 }

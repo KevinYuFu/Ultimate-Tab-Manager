@@ -15,6 +15,13 @@ export type Bin = {
   parentId: string | null
 }
 
+// A point-in-time copy of the stashed state, pushed onto the undo stack before
+// each mutating operation so undo can restore it.
+export type Snapshot = {
+  tabs: Tab[]
+  bins: Bin[]
+}
+
 // The operations the user can perform in the app.
 export type Operation =
   | 'stash'

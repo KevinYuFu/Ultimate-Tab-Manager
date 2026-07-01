@@ -5,8 +5,10 @@ import type { Bin, Tab } from '../types'
 import {
   getBins,
   getStashedTabs,
+  getUndoStack,
   saveBins,
   saveStashedTabs,
+  saveUndoStack,
 } from './storage'
 import {
   closeTab,
@@ -17,6 +19,43 @@ import {
   openUrl,
 } from './tabs'
 import { smartName } from './smartName'
+
+// How many undo steps we keep. Snapshots hold the whole stashed state, so this
+// is a deliberate cap to bound storage use.
+const MAX_UNDO = 25
+
+// Record the current stashed state so the next mutation can be undone. Every
+// mutating operation calls this once, after its no-op guards, so the snapshot
+// reflects the state immediately before the change.
+async function pushHistory(): Promise<void> {
+  const [tabs, bins, stack] = await Promise.all([
+    getStashedTabs(),
+    getBins(),
+    getUndoStack(),
+  ])
+  const next = [...stack, { tabs, bins }]
+  while (next.length > MAX_UNDO) next.shift()
+  await saveUndoStack(next)
+}
+
+// Undo the last mutating action by restoring the previous snapshot. Any stashed
+// tab the restore removes (e.g. undoing a stash) is reopened in the browser so
+// it isn't lost. Returns true if something was undone.
+export async function undo(): Promise<boolean> {
+  const stack = await getUndoStack()
+  const prev = stack[stack.length - 1]
+  if (!prev) return false
+
+  const current = await getStashedTabs()
+  await saveStashedTabs(prev.tabs)
+  await saveBins(prev.bins)
+  await saveUndoStack(stack.slice(0, -1))
+
+  const restoredIds = new Set(prev.tabs.map(t => t.id))
+  const removed = current.filter(t => !restoredIds.has(t.id))
+  for (const t of removed) await openUrl(t.url)
+  return true
+}
 
 export async function listStashedTabs(): Promise<Tab[]> {
   return getStashedTabs()
@@ -33,6 +72,7 @@ export async function stashActiveTab(): Promise<Tab[]> {
   const existing = await getStashedTabs()
   if (!active?.url) return existing
 
+  await pushHistory()
   const tab: Tab = {
     id: crypto.randomUUID(),
     url: active.url,
@@ -66,6 +106,7 @@ export async function stashAllTabs(): Promise<string | null> {
   const stashable = open.filter(t => t.url && !t.pinned && /^https?:/i.test(t.url))
   if (stashable.length === 0) return null
 
+  await pushHistory()
   const bins = await getBins()
   const existing = await getStashedTabs()
 
@@ -96,6 +137,7 @@ export async function stashAllTabs(): Promise<string | null> {
 }
 
 export async function renameStashedTab(id: string, name: string): Promise<Tab[]> {
+  await pushHistory()
   const tabs = await getStashedTabs()
   const updated = tabs.map(t => (t.id === id ? { ...t, name } : t))
   await saveStashedTabs(updated)
@@ -103,6 +145,7 @@ export async function renameStashedTab(id: string, name: string): Promise<Tab[]>
 }
 
 export async function deleteStashedTab(id: string): Promise<Tab[]> {
+  await pushHistory()
   const tabs = await getStashedTabs()
   const updated = tabs.filter(t => t.id !== id)
   await saveStashedTabs(updated)
@@ -111,6 +154,7 @@ export async function deleteStashedTab(id: string): Promise<Tab[]> {
 
 // Delete several tabs in one write (a per-id loop would race on the shared list).
 export async function deleteStashedTabs(ids: string[]): Promise<Tab[]> {
+  await pushHistory()
   const tabs = await getStashedTabs()
   const remove = new Set(ids)
   const updated = tabs.filter(t => !remove.has(t.id))
@@ -137,6 +181,7 @@ export async function reorderTabs(
   if (idx === -1) return tabs
   if (placeAfter) idx += 1
 
+  await pushHistory()
   rest.splice(idx, 0, moved)
   await saveStashedTabs(rest)
   return rest
@@ -148,6 +193,7 @@ export async function moveTabToBin(tabId: string, binId: string | null): Promise
   const dragged = tabs.find(t => t.id === tabId)
   if (!dragged || dragged.binId === binId) return tabs
 
+  await pushHistory()
   const rest = tabs.filter(t => t.id !== tabId)
   rest.push({ ...dragged, binId })
   await saveStashedTabs(rest)
@@ -157,6 +203,7 @@ export async function moveTabToBin(tabId: string, binId: string | null): Promise
 // ── Bins (slice 1: create / rename / delete) ──
 
 export async function createBin(parentId: string | null): Promise<Bin> {
+  await pushHistory()
   const bins = await getBins()
   const bin: Bin = { id: crypto.randomUUID(), name: 'New Bin', parentId }
   await saveBins([...bins, bin])
@@ -164,6 +211,7 @@ export async function createBin(parentId: string | null): Promise<Bin> {
 }
 
 export async function renameBin(id: string, name: string): Promise<Bin[]> {
+  await pushHistory()
   const bins = await getBins()
   const updated = bins.map(b => (b.id === id ? { ...b, name } : b))
   await saveBins(updated)
@@ -172,6 +220,7 @@ export async function renameBin(id: string, name: string): Promise<Bin[]> {
 
 // Delete a bin, moving its child bins and tabs up to its parent (no data loss).
 export async function deleteBin(id: string): Promise<void> {
+  await pushHistory()
   const bins = await getBins()
   const tabs = await getStashedTabs()
   const target = bins.find(b => b.id === id)
@@ -214,6 +263,7 @@ export async function reorderBins(
   if (idx === -1) return bins
   if (placeAfter) idx += 1
 
+  await pushHistory()
   rest.splice(idx, 0, moved)
   await saveBins(rest)
   return rest
@@ -232,6 +282,7 @@ export async function moveBin(binId: string, newParentId: string | null): Promis
     cursor = byId.get(cursor)?.parentId ?? null
   }
 
+  await pushHistory()
   const updated = bins.map(b => (b.id === binId ? { ...b, parentId: newParentId } : b))
   await saveBins(updated)
   return updated
