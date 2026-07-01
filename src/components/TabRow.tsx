@@ -123,7 +123,10 @@ export default function TabRow({
         <>
           <span className="tab-name">{tab.name}</span>
           <span className="tab-host">{hostname(tab.url)}</span>
-          <div className="tab-actions">
+          {/* Stop dblclick here: after a delete the next row shifts under the
+              cursor, so a rapid second click on this button would otherwise
+              register as a double-click on the row and open the tab. */}
+          <div className="tab-actions" onDoubleClick={(e) => e.stopPropagation()}>
             <button
               className="tab-icon-btn"
               title="Edit name"
