@@ -65,8 +65,25 @@ export default function Navigator({
   const [bins, setBins] = useState<Bin[]>([])
   const [editing, setEditing] = useState<Editing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // The container whose direct children are addressable by number (1–9).
+  // null = root; otherwise an expanded bin's id. See scopeItems / handleOpenBin.
+  const [scope, setScope] = useState<string | null>(null)
 
   const sel = useSelection(tabs)
+
+  // The numbered items: the scope's direct children in render order (bins, then
+  // tabs), first 9 get numbers 1–9. numberOf maps an id to its badge number.
+  const scopeItems = [
+    ...bins.filter(b => b.parentId === scope).map(b => ({ kind: 'bin' as const, id: b.id })),
+    ...tabs.filter(t => t.binId === scope).map(t => ({ kind: 'tab' as const, id: t.id })),
+  ]
+  const numberOf = new Map<string, number>()
+  scopeItems.slice(0, 9).forEach((item, i) => numberOf.set(item.id, i + 1))
+
+  // If the scope bin disappears (deleted/undone), fall back to root.
+  useEffect(() => {
+    if (scope !== null && !bins.some(b => b.id === scope)) setScope(null)
+  }, [bins, scope])
 
   const refresh = async () => {
     const [t, b] = await Promise.all([listStashedTabs(), listBins()])
@@ -157,14 +174,37 @@ export default function Navigator({
   }
 
   // ── Bins ──
-  // Open a bin = expand/collapse it.
+  // Open a bin = expand/collapse it. The scope follows: opening moves it into
+  // the bin, closing moves it up to the bin's parent (so numbers track what the
+  // user is looking at).
   const handleOpenBin = (id: string) => {
+    const willExpand = !expanded.has(id)
     setExpanded(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (willExpand) next.add(id)
+      else next.delete(id)
       return next
     })
+    setScope(willExpand ? id : bins.find(b => b.id === id)?.parentId ?? null)
+  }
+
+  // Enter a bin (from number quick-select): ensure it's open and scoped in.
+  const enterBin = (id: string) => {
+    setExpanded(prev => new Set(prev).add(id))
+    setScope(id)
+    sel.selectBin(id)
+  }
+
+  // Selecting a tab with the mouse moves the scope to its parent bin.
+  const handleSelectTab = (tab: Tab, e: React.MouseEvent) => {
+    sel.selectTab(tab, e)
+    setScope(tab.binId)
+  }
+
+  // Number key (1–9): act on the Nth item in scope — enter a bin, select a tab.
+  const quickSelect = (item: { kind: 'bin' | 'tab'; id: string }) => {
+    if (item.kind === 'bin') enterBin(item.id)
+    else sel.selectTabId(item.id)
   }
 
   const handleDeleteBin = async (id: string) => {
@@ -245,6 +285,15 @@ export default function Navigator({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (editing) return
+      // Quick-select: 1–9 acts on the Nth item in the current scope.
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
+        const item = scopeItems[Number(e.key) - 1]
+        if (item) {
+          e.preventDefault()
+          quickSelect(item)
+        }
+        return
+      }
       const combo = captureKey(e)
       if (!combo) return
       const op = (Object.keys(keybindings) as Operation[]).find(
@@ -257,7 +306,7 @@ export default function Navigator({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handlers, editing, keybindings])
+  }, [handlers, editing, keybindings, scopeItems, quickSelect])
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
@@ -274,9 +323,10 @@ export default function Navigator({
           firstInGroup={firstInGroup}
           lastInGroup={lastInGroup}
           selected={sel.selectedIds.has(tab.id)}
+          number={numberOf.get(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
           dragging={dnd.dragTabIds.includes(tab.id)}
-          onSelect={sel.selectTab}
+          onSelect={handleSelectTab}
           onOpen={handleOpen}
           onDelete={handleDeleteTab}
           onStartEdit={id => setEditing({ kind: 'tab', id })}
@@ -311,6 +361,7 @@ export default function Navigator({
                 depth={depth}
                 expanded={expanded.has(bin.id)}
                 selected={sel.selectedBinId === bin.id}
+                number={numberOf.get(bin.id)}
                 editing={editing?.kind === 'bin' && editing.id === bin.id}
                 dropInto={dnd.dropState?.kind === 'bin' && dnd.dropState.id === bin.id}
                 dragging={dnd.draggingItem?.kind === 'bin' && dnd.draggingItem.id === bin.id}
@@ -391,10 +442,6 @@ export default function Navigator({
             <span>{label}</span>
           </button>
         ))}
-        <button className="action-btn">
-          <kbd className="btn-kbd">1–9</kbd>
-          <span>Quick Select</span>
-        </button>
       </div>
 
       <div className="status-bar">

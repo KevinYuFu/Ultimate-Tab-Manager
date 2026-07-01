@@ -52,6 +52,13 @@ export function useSelection(tabs: Tab[]) {
     anchorRef.current = null
   }
 
+  // Select a single tab programmatically (e.g. number quick-select), no event.
+  const selectTabId = (id: string) => {
+    setSelectedBinId(null)
+    setSelectedIds(new Set([id]))
+    anchorRef.current = id
+  }
+
   const deselectTab = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev)
@@ -60,5 +67,5 @@ export function useSelection(tabs: Tab[]) {
     })
   }
 
-  return { selectedIds, selectedBinId, clear, selectTab, selectBin, deselectTab }
+  return { selectedIds, selectedBinId, clear, selectTab, selectBin, selectTabId, deselectTab }
 }
