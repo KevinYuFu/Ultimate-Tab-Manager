@@ -60,7 +60,11 @@ export async function openFullView(): Promise<void> {
 // Stash every normal (http/https) tab in the current window into a new
 // date-named bin, then close them. Returns the new bin's id (or null if there
 // was nothing to stash). chrome:// / new-tab pages are skipped.
-export async function stashAllTabs(): Promise<string | null> {
+//
+// When openManagerAfter is set, the Full View tab is opened *before* the others
+// are closed: closing the window's last tab would destroy this popup mid-call,
+// so the manager must exist first to keep the window (and this code) alive.
+export async function stashAllTabs(openManagerAfter = false): Promise<string | null> {
   const open = await getTabsInCurrentWindow()
   // Skip pinned tabs: a pinned tab is a deliberate "keep this open" signal.
   const stashable = open.filter(t => t.url && !t.pinned && /^https?:/i.test(t.url))
@@ -91,6 +95,7 @@ export async function stashAllTabs(): Promise<string | null> {
 
   await saveBins([bin, ...bins])
   await saveStashedTabs([...stashed, ...existing])
+  if (openManagerAfter) await openFullView()
   await closeTabs(stashable.map(t => t.id).filter((id): id is number => id !== undefined))
   return bin.id
 }

@@ -91,14 +91,11 @@ export default function Navigator({
   }
 
   const handleStashAll = async () => {
-    const binId = await stashAllTabs()
+    // Open the Full View (unless we're already in it) as part of the stash, so
+    // the manager tab exists before the window's tabs are closed.
+    const binId = await stashAllTabs(stashAllOpensFullView && !isFullView)
     await refresh()
-    if (binId) {
-      setExpanded(prev => new Set(prev).add(binId))
-      // Stashing all clears the window; when enabled, land the user on the Full
-      // View to see the result. (Skipped when already in Full View.)
-      if (stashAllOpensFullView && !isFullView) await openFullView()
-    }
+    if (binId) setExpanded(prev => new Set(prev).add(binId))
   }
 
   // ── Tabs ──
