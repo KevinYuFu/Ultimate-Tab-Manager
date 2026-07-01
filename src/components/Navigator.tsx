@@ -35,6 +35,10 @@ const SECONDARY: { op: Operation; label: string }[] = [
   { op: 'undo',         label: 'Undo' },
 ]
 
+// True when this document is the standalone Full View tab (opened with
+// ?view=full) rather than the toolbar popup.
+const isFullView = new URLSearchParams(window.location.search).get('view') === 'full'
+
 // What's currently being renamed inline — a tab or a bin.
 type Editing = { kind: 'tab' | 'bin'; id: string } | null
 
@@ -84,7 +88,12 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
   const handleStashAll = async () => {
     const binId = await stashAllTabs()
     await refresh()
-    if (binId) setExpanded(prev => new Set(prev).add(binId))
+    if (binId) {
+      setExpanded(prev => new Set(prev).add(binId))
+      // Stashing all clears the window, so from the popup land the user on the
+      // Full View to see the result. (Already there when in Full View.)
+      if (!isFullView) await openFullView()
+    }
   }
 
   // ── Tabs ──
