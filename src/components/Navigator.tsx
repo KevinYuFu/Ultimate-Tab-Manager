@@ -79,7 +79,9 @@ export default function Navigator({
   const dnd = useDragAndDrop({
     bins,
     onChange: refresh,
-    onDragStart: sel.clear,
+    // Drag the whole selection when the grabbed tab is part of it; else just it.
+    resolveTabDrag: id =>
+      sel.selectedIds.has(id) && sel.selectedIds.size > 1 ? [...sel.selectedIds] : [id],
     onNestInto: id => setExpanded(prev => new Set(prev).add(id)),
   })
 
@@ -275,7 +277,7 @@ export default function Navigator({
           lastInGroup={lastInGroup}
           selected={sel.selectedIds.has(tab.id)}
           editing={editing?.kind === 'tab' && editing.id === tab.id}
-          dragging={dnd.draggingItem?.kind === 'tab' && dnd.draggingItem.id === tab.id}
+          dragging={dnd.dragTabIds.includes(tab.id)}
           onSelect={sel.selectTab}
           onOpen={handleOpen}
           onDelete={handleDeleteTab}

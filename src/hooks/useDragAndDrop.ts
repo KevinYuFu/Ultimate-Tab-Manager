@@ -2,11 +2,11 @@ import { useState, type DragEvent } from 'react'
 import type { Bin } from '../types'
 import {
   moveBin,
-  moveTabToBin,
+  moveTabsToBin,
   reorderBins,
   reorderTabs,
 } from '../services/operations'
-import { binSpot, recordBinMove, recordTabMove, tabSpot } from '../services/history'
+import { binSpot, recordBinMove, recordTabsMove, tabsSnapshot } from '../services/history'
 
 // The item being dragged — a tab or a bin.
 export type DragItem = { kind: 'tab' | 'bin'; id: string } | null
@@ -23,7 +23,9 @@ export type DropState =
 type Params = {
   bins: Bin[]
   onChange: () => void | Promise<void> // re-read after a move lands
-  onDragStart?: () => void // e.g. clear the selection
+  // Given the grabbed tab, which tabs move with it — the whole selection when
+  // the grabbed tab is part of it, otherwise just that tab.
+  resolveTabDrag: (id: string) => string[]
   onNestInto?: (binId: string) => void // e.g. expand the bin we dropped into
 }
 
@@ -32,9 +34,11 @@ type Params = {
 // release. The move is committed in dragEnd — which fires on every release,
 // even when the cursor overshoots a non-row element — so releasing anywhere
 // lands the item where the indicator shows.
-export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Params) {
+export function useDragAndDrop({ bins, onChange, resolveTabDrag, onNestInto }: Params) {
   const [draggingItem, setDraggingItem] = useState<DragItem>(null)
   const [dropState, setDropState] = useState<DropState>(null)
+  // The tabs travelling with this drag (≥1). Empty when dragging a bin.
+  const [dragTabIds, setDragTabIds] = useState<string[]>([])
 
   // Is bin `maybeChildId` a descendant of `ancestorId`? Blocks nesting a bin
   // into its own subtree (which would create a cycle).
@@ -50,7 +54,7 @@ export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Para
 
   const startDrag = (kind: 'tab' | 'bin', id: string, e: DragEvent) => {
     setDraggingItem({ kind, id })
-    onDragStart?.()
+    setDragTabIds(kind === 'tab' ? resolveTabDrag(id) : [])
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', id)
   }
@@ -60,7 +64,8 @@ export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Para
     if (draggingItem?.kind !== 'tab') return
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
-    if (id === draggingItem.id) {
+    if (dragTabIds.includes(id)) {
+      // hovering one of the dragged tabs — no insertion line
       setDropState(null)
       return
     }
@@ -126,18 +131,20 @@ export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Para
   const dragEnd = async () => {
     const item = draggingItem
     const drop = dropState
+    const tabIds = dragTabIds
     setDraggingItem(null)
     setDropState(null)
+    setDragTabIds([])
     if (!item || !drop) return
 
     if (item.kind === 'tab') {
-      const from = await tabSpot(item.id) // capture before the move, for undo
-      if (drop.kind === 'tab') await reorderTabs(item.id, drop.id, drop.after)
+      const from = await tabsSnapshot(tabIds) // capture before the move, for undo
+      if (drop.kind === 'tab') await reorderTabs(tabIds, drop.id, drop.after)
       else if (drop.kind === 'bin') {
-        await moveTabToBin(item.id, drop.id)
+        await moveTabsToBin(tabIds, drop.id)
         onNestInto?.(drop.id)
-      } else if (drop.kind === 'root') await moveTabToBin(item.id, null)
-      await recordTabMove(item.id, from)
+      } else if (drop.kind === 'root') await moveTabsToBin(tabIds, null)
+      await recordTabsMove(tabIds, from)
     } else {
       const from = await binSpot(item.id)
       if (drop.kind === 'binReorder') await reorderBins(item.id, drop.id, drop.after)
@@ -153,6 +160,7 @@ export function useDragAndDrop({ bins, onChange, onDragStart, onNestInto }: Para
 
   return {
     draggingItem,
+    dragTabIds,
     dropState,
     startDrag,
     tabDragOver,
