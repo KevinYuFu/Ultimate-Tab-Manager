@@ -68,6 +68,14 @@ export default function Navigator({ keybindings, onOpenPreferences }: Props) {
     refresh()
   }, [])
 
+  // Re-pull when the view becomes visible again, so switching to the Full View
+  // tab shows changes made in the popup (and vice versa).
+  useEffect(() => {
+    const onVisible = () => document.visibilityState === 'visible' && refresh()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   const handleNewBin = async () => {
     const bin = await createBin(null)
     await refresh()
