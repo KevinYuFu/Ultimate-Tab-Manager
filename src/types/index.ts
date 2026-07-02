@@ -50,6 +50,7 @@ export type Operation =
   | 'editName'
   | 'delete'
   | 'open'
+  | 'goBack'
   | 'undo'
   | 'redo'
 
@@ -62,8 +63,9 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   openFullView: 'M',
   newBin: 'B',
   editName: 'E',
-  delete: 'Backspace',
-  open: 'Enter',
+  delete: 'D',
+  open: 'O',
+  goBack: 'Backspace',
   undo: 'Ctrl+Z',
   redo: 'Ctrl+Shift+Z',
 }

@@ -297,6 +297,23 @@ body.full-view .app {
   text-overflow: ellipsis;
 }
 
+/* Quick-select number badge (1–9) on the current scope's direct children. */
+.row-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .tab-favicon {
   width: 16px;
   height: 16px;

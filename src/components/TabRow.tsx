@@ -8,6 +8,7 @@ type Props = {
   firstInGroup: boolean
   lastInGroup: boolean
   selected: boolean
+  number?: number
   editing: boolean
   dragging: boolean
   onSelect: (tab: Tab, e: React.MouseEvent) => void
@@ -36,6 +37,7 @@ export default function TabRow({
   firstInGroup,
   lastInGroup,
   selected,
+  number,
   editing,
   dragging,
   onSelect,
@@ -82,6 +84,7 @@ export default function TabRow({
           aria-hidden="true"
         />
       )}
+      {number && <span className="row-number">{number}</span>}
       {showFavicon ? (
         <img
           className="tab-favicon"

@@ -7,6 +7,7 @@ type Props = {
   depth: number
   expanded: boolean
   selected: boolean
+  number?: number
   editing: boolean
   dropInto: boolean
   dragging: boolean
@@ -27,6 +28,7 @@ export default function BinRow({
   depth,
   expanded,
   selected,
+  number,
   editing,
   dropInto,
   dragging,
@@ -79,6 +81,7 @@ export default function BinRow({
           aria-hidden="true"
         />
       )}
+      {number && <span className="row-number">{number}</span>}
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>
