@@ -65,14 +65,20 @@ export default function Navigator({
   const [bins, setBins] = useState<Bin[]>([])
   const [editing, setEditing] = useState<Editing>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
-  // The container whose direct children are addressable by number (1–9).
-  // null = root; otherwise an expanded bin's id. See scopeItems / handleOpenBin.
+  // The container whose direct children are numbered (1–9). null = root. It's
+  // set per-action: clicking/entering a bin scopes into it; arrowing onto a bin
+  // scopes to that bin's level (its parent). See handleOpenBin / moveCursor.
   const [scope, setScope] = useState<string | null>(null)
 
   const sel = useSelection(tabs)
 
-  // The numbered items: the scope's direct children in render order (bins, then
-  // tabs), first 9 get numbers 1–9. numberOf maps an id to its badge number.
+  // Reset to root if the scope bin disappears (deleted/undone).
+  useEffect(() => {
+    if (scope !== null && !bins.some(b => b.id === scope)) setScope(null)
+  }, [bins, scope])
+
+  // Numbered items: the scope's direct children in render order (bins, then
+  // tabs); first 9 get badges 1–9. numberOf maps an id to its badge number.
   const scopeItems = [
     ...bins.filter(b => b.parentId === scope).map(b => ({ kind: 'bin' as const, id: b.id })),
     ...tabs.filter(t => t.binId === scope).map(t => ({ kind: 'tab' as const, id: t.id })),
@@ -80,10 +86,27 @@ export default function Navigator({
   const numberOf = new Map<string, number>()
   scopeItems.slice(0, 9).forEach((item, i) => numberOf.set(item.id, i + 1))
 
-  // If the scope bin disappears (deleted/undone), fall back to root.
+  // The flat visible tree in render order (bins with their expanded subtrees,
+  // then tabs) — the sequence the arrow keys walk through.
+  const visibleItems: { kind: 'bin' | 'tab'; id: string }[] = []
+  const walkVisible = (parentId: string | null) => {
+    for (const b of bins.filter(x => x.parentId === parentId)) {
+      visibleItems.push({ kind: 'bin', id: b.id })
+      if (expanded.has(b.id)) walkVisible(b.id)
+    }
+    for (const t of tabs.filter(x => x.binId === parentId)) {
+      visibleItems.push({ kind: 'tab', id: t.id })
+    }
+  }
+  walkVisible(null)
+
+  // Keep the selected row visible when moving through it with the keyboard.
+  // block:'nearest' is a no-op when it's already on screen (e.g. mouse clicks).
   useEffect(() => {
-    if (scope !== null && !bins.some(b => b.id === scope)) setScope(null)
-  }, [bins, scope])
+    document
+      .querySelector('.tab-row.selected, .bin-row.selected')
+      ?.scrollIntoView({ block: 'nearest' })
+  }, [sel.selectedIds, sel.selectedBinId])
 
   const refresh = async () => {
     const [t, b] = await Promise.all([listStashedTabs(), listBins()])
@@ -174,9 +197,8 @@ export default function Navigator({
   }
 
   // ── Bins ──
-  // Open a bin = expand/collapse it. The scope follows: opening moves it into
-  // the bin, closing moves it up to the bin's parent (so numbers track what the
-  // user is looking at).
+  // Mouse toggle: open a bin scopes into it (its children get numbered);
+  // closing it scopes back out to the bin's level.
   const handleOpenBin = (id: string) => {
     const willExpand = !expanded.has(id)
     setExpanded(prev => {
@@ -188,14 +210,20 @@ export default function Navigator({
     setScope(willExpand ? id : bins.find(b => b.id === id)?.parentId ?? null)
   }
 
-  // Enter a bin (from number quick-select): ensure it's open and scoped in.
+  // Enter (drill into) a bin: expand it, scope into it, and move the cursor to
+  // its first child so its children become the numbered set. An empty bin just
+  // opens with the cursor left on it.
   const enterBin = (id: string) => {
     setExpanded(prev => new Set(prev).add(id))
     setScope(id)
-    sel.selectBin(id)
+    const childBin = bins.find(b => b.parentId === id)
+    const childTab = tabs.find(t => t.binId === id)
+    if (childBin) sel.selectBin(childBin.id)
+    else if (childTab) sel.selectTabId(childTab.id)
+    else sel.selectBin(id)
   }
 
-  // Selecting a tab with the mouse moves the scope to its parent bin.
+  // Clicking a tab scopes to its parent (so you can switch levels by clicking).
   const handleSelectTab = (tab: Tab, e: React.MouseEvent) => {
     sel.selectTab(tab, e)
     setScope(tab.binId)
@@ -214,10 +242,41 @@ export default function Navigator({
     }
   }
 
-  // Go back = move the scope out to its parent (root does nothing).
+  // Go back = close the bin we're in and land on it: the selected bin if it's
+  // open, otherwise the scope bin (the one containing the cursor). Root does
+  // nothing.
   const handleGoBack = () => {
-    if (scope === null) return
-    setScope(bins.find(b => b.id === scope)?.parentId ?? null)
+    const binToClose =
+      sel.selectedBinId && expanded.has(sel.selectedBinId) ? sel.selectedBinId : scope
+    if (binToClose === null) return
+    setExpanded(prev => {
+      const next = new Set(prev)
+      next.delete(binToClose)
+      return next
+    })
+    sel.selectBin(binToClose)
+    setScope(bins.find(b => b.id === binToClose)?.parentId ?? null)
+  }
+
+  // Arrow ↑/↓: move the selection freely through the whole visible tree; scope
+  // follows to the new cursor's level (a bin scopes to its parent, a tab to its
+  // bin), so the numbers re-map as you cross levels.
+  const moveCursor = (delta: 1 | -1) => {
+    if (visibleItems.length === 0) return
+    const cur = visibleItems.findIndex(it =>
+      it.kind === 'bin' ? sel.selectedBinId === it.id : sel.selectedIds.has(it.id),
+    )
+    const next = cur === -1
+      ? (delta > 0 ? 0 : visibleItems.length - 1)
+      : Math.min(Math.max(cur + delta, 0), visibleItems.length - 1)
+    const item = visibleItems[next]
+    if (item.kind === 'bin') {
+      sel.selectBin(item.id)
+      setScope(bins.find(b => b.id === item.id)?.parentId ?? null)
+    } else {
+      sel.selectTabId(item.id)
+      setScope(tabs.find(t => t.id === item.id)?.binId ?? null)
+    }
   }
 
   const handleDeleteBin = async (id: string) => {
@@ -242,7 +301,7 @@ export default function Navigator({
   // These act on the current selection so the keyboard and the toolbar buttons
   // share one behaviour. "Open"/"Edit"/"Delete" are type-specific (bin vs tab).
   const handleOpenSelection = () => {
-    if (sel.selectedBinId) handleOpenBin(sel.selectedBinId)
+    if (sel.selectedBinId) enterBin(sel.selectedBinId)
     else tabs.filter(t => sel.selectedIds.has(t.id)).forEach(openStashedTab)
   }
 
@@ -308,6 +367,29 @@ export default function Navigator({
         }
         return
       }
+      // Arrow navigation: ↑/↓ move freely through the visible tree, → drills
+      // into a bin, ← goes back (close/up).
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        moveCursor(e.key === 'ArrowDown' ? 1 : -1)
+        return
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        if (sel.selectedBinId) enterBin(sel.selectedBinId)
+        return
+      }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        handleGoBack()
+        return
+      }
+      // Enter also opens (in addition to the rebindable open key).
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        handleOpenSelection()
+        return
+      }
       const combo = captureKey(e)
       if (!combo) return
       const op = (Object.keys(keybindings) as Operation[]).find(
@@ -320,7 +402,7 @@ export default function Navigator({
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [handlers, editing, keybindings, scopeItems, quickSelect])
+  }, [handlers, editing, keybindings, scopeItems, quickSelect, moveCursor, enterBin, handleGoBack, handleOpenSelection])
 
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
