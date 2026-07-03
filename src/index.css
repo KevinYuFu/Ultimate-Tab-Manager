@@ -570,8 +570,28 @@ body.full-view .app {
   flex-direction: column;
   gap: 3px;
 }
-.setting-label { font-size: 13px; color: var(--text-1); }
+.setting-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-1);
+}
 .setting-desc { font-size: 11px; line-height: 1.4; color: var(--text-3); }
+
+.premium-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 
 .switch {
   position: relative;
@@ -586,6 +606,7 @@ body.full-view .app {
   transition: background 0.18s ease;
 }
 .switch.on { background: #3fb950; }
+.switch:disabled { opacity: 0.4; cursor: default; }
 .switch-knob {
   position: absolute;
   top: 2px;

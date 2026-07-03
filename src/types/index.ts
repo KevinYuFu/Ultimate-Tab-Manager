@@ -74,10 +74,15 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
 // Defaults on so new users discover the Full View.
 export const DEFAULT_STASH_ALL_OPENS_FULL_VIEW = true
 
+// Whether stashing routes tabs through AI sorting (premium). Off by default —
+// it's opt-in and sends tab titles/URLs to the AI provider.
+export const DEFAULT_AI_SORT_ON_STASH = false
+
 export type Settings = {
   themeId: string
   keybindings: Keybindings
   stashAllOpensFullView: boolean
+  aiSortOnStash: boolean
   tabs: Tab[]
   bins: Bin[]
 }
