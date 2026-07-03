@@ -63,9 +63,9 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   openFullView: 'M',
   newBin: 'B',
   editName: 'E',
-  delete: 'D',
+  delete: 'Backspace',
   open: 'O',
-  goBack: 'Backspace',
+  goBack: 'ArrowLeft',
   undo: 'Ctrl+Z',
   redo: 'Ctrl+Shift+Z',
 }
