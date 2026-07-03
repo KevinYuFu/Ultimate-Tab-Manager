@@ -620,6 +620,22 @@ body.full-view .app {
 }
 .switch.on .switch-knob { transform: translateX(18px); }
 
+.text-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 7px;
+  color: var(--text-1);
+  font-size: 12.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.1s;
+}
+.text-input::placeholder { color: var(--text-3); }
+.text-input:focus { border-color: var(--accent); }
+
 /* Shortcut section */
 .shortcut-btn {
   display: flex;

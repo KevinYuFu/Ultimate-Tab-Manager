@@ -7,5 +7,6 @@
     "default_popup": "popup.html",
     "default_title": "Ultimate Tab Manager"
   },
-  "permissions": ["tabs", "storage"]
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["https://api.anthropic.com/*"]
 }
