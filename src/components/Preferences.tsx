@@ -1,7 +1,8 @@
-import { ArrowLeft, Check, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Check, ExternalLink, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { THEMES, type Theme } from '../themes'
 import { DEFAULT_KEYBINDINGS, type Keybindings, type Operation } from '../types'
+import { hasPremium } from '../services/premium'
 import { captureKey, displayKey } from '../utils'
 
 const OPERATION_LABELS: { op: Operation; label: string }[] = [
@@ -24,6 +25,8 @@ type Props = {
   onKeybindingsChange: (keybindings: Keybindings) => void
   stashAllOpensFullView: boolean
   onStashAllOpensFullViewChange: (value: boolean) => void
+  aiSortOnStash: boolean
+  onAiSortOnStashChange: (value: boolean) => void
   onBack: () => void
 }
 
@@ -34,8 +37,11 @@ export default function Preferences({
   onKeybindingsChange,
   stashAllOpensFullView,
   onStashAllOpensFullViewChange,
+  aiSortOnStash,
+  onAiSortOnStashChange,
   onBack,
 }: Props) {
+  const premium = hasPremium()
   const [editingOp, setEditingOp] = useState<Operation | null>(null)
   const editingRef = useRef<Operation | null>(null)
   editingRef.current = editingOp
@@ -115,6 +121,28 @@ export default function Preferences({
               aria-label="Display Manager After Stash All"
               className={`switch${stashAllOpensFullView ? ' on' : ''}`}
               onClick={() => onStashAllOpensFullViewChange(!stashAllOpensFullView)}
+            >
+              <span className="switch-knob" />
+            </button>
+          </div>
+
+          {/* Premium: when not entitled the toggle is locked (kept forced-off). */}
+          <div className="setting-row">
+            <div className="setting-text">
+              <span className="setting-label">
+                AI Sorting on Stash
+                <span className="premium-badge"><Sparkles size={9} strokeWidth={2.5} />Premium</span>
+              </span>
+              <span className="setting-desc">Sort stashed tabs into your existing bins automatically. Sends tab titles and URLs to the AI provider.</span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={premium && aiSortOnStash}
+              aria-label="AI Sorting on Stash"
+              disabled={!premium}
+              className={`switch${premium && aiSortOnStash ? ' on' : ''}`}
+              onClick={() => premium && onAiSortOnStashChange(!aiSortOnStash)}
             >
               <span className="switch-knob" />
             </button>

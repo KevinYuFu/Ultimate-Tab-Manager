@@ -3,6 +3,7 @@ import Navigator from './components/Navigator'
 import Preferences from './components/Preferences'
 import { THEMES, DEFAULT_THEME, type Theme } from './themes'
 import {
+  DEFAULT_AI_SORT_ON_STASH,
   DEFAULT_KEYBINDINGS,
   DEFAULT_STASH_ALL_OPENS_FULL_VIEW,
   type Keybindings,
@@ -16,20 +17,27 @@ export default function App() {
   const [stashAllOpensFullView, setStashAllOpensFullView] = useState(
     DEFAULT_STASH_ALL_OPENS_FULL_VIEW,
   )
+  const [aiSortOnStash, setAiSortOnStash] = useState(DEFAULT_AI_SORT_ON_STASH)
 
   useEffect(() => {
-    chrome.storage.local.get(['themeId', 'keybindings', 'stashAllOpensFullView'], (result) => {
-      if (result.themeId) {
-        const found = THEMES.find(t => t.id === result.themeId)
-        if (found) setTheme(found)
-      }
-      if (result.keybindings) {
-        setKeybindings({ ...DEFAULT_KEYBINDINGS, ...result.keybindings })
-      }
-      if (typeof result.stashAllOpensFullView === 'boolean') {
-        setStashAllOpensFullView(result.stashAllOpensFullView)
-      }
-    })
+    chrome.storage.local.get(
+      ['themeId', 'keybindings', 'stashAllOpensFullView', 'aiSortOnStash'],
+      (result) => {
+        if (result.themeId) {
+          const found = THEMES.find(t => t.id === result.themeId)
+          if (found) setTheme(found)
+        }
+        if (result.keybindings) {
+          setKeybindings({ ...DEFAULT_KEYBINDINGS, ...result.keybindings })
+        }
+        if (typeof result.stashAllOpensFullView === 'boolean') {
+          setStashAllOpensFullView(result.stashAllOpensFullView)
+        }
+        if (typeof result.aiSortOnStash === 'boolean') {
+          setAiSortOnStash(result.aiSortOnStash)
+        }
+      },
+    )
   }, [])
 
   const applyTheme = (t: Theme) => {
@@ -45,6 +53,11 @@ export default function App() {
   const saveStashAllOpensFullView = (value: boolean) => {
     setStashAllOpensFullView(value)
     chrome.storage.local.set({ stashAllOpensFullView: value })
+  }
+
+  const saveAiSortOnStash = (value: boolean) => {
+    setAiSortOnStash(value)
+    chrome.storage.local.set({ aiSortOnStash: value })
   }
 
   useEffect(() => {
@@ -85,6 +98,8 @@ export default function App() {
           onKeybindingsChange={saveKeybindings}
           stashAllOpensFullView={stashAllOpensFullView}
           onStashAllOpensFullViewChange={saveStashAllOpensFullView}
+          aiSortOnStash={aiSortOnStash}
+          onAiSortOnStashChange={saveAiSortOnStash}
           onBack={() => setView('navigator')}
         />
       )}
