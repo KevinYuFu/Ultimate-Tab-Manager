@@ -17,6 +17,17 @@ import {
   openUrl,
 } from './tabs'
 import { smartName } from './smartName'
+import { isAiSortEnabled, sortIntoExistingBins } from './aiSort'
+
+// Name for the catch-all bin new stashes land in: the current date/time.
+function dateBinName(): string {
+  return new Date().toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
 
 export async function listStashedTabs(): Promise<Tab[]> {
   return getStashedTabs()
@@ -61,9 +72,10 @@ export async function openFullView(options?: { stashOnOpen?: boolean }): Promise
   await openExtensionPage(`popup.html?${query}`)
 }
 
-// Stash every normal (http/https) tab in the current window into a new
-// date-named bin, then close them. Returns the new bin's id (or null if there
-// was nothing to stash). chrome:// / new-tab pages are skipped.
+// Stash every normal (http/https) tab in the current window, then close them.
+// With AI sorting on, tabs that fit an existing bin go there; the rest fall into
+// a new date-named bin (the default). Returns the date bin's id if one was
+// created (so the caller can expand it), else null. chrome:// pages are skipped.
 export async function stashAllTabs(): Promise<string | null> {
   const open = await getTabsInCurrentWindow()
   // Skip pinned tabs: a pinned tab is a deliberate "keep this open" signal.
@@ -72,31 +84,40 @@ export async function stashAllTabs(): Promise<string | null> {
 
   const bins = await getBins()
   const existing = await getStashedTabs()
-
-  const bin: Bin = {
-    id: crypto.randomUUID(),
-    name: new Date().toLocaleString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }),
-    parentId: null,
-  }
   const now = Date.now()
-  const stashed: Tab[] = stashable.map(t => ({
+
+  const built: Tab[] = stashable.map(t => ({
     id: crypto.randomUUID(),
     url: t.url!,
     name: smartName(t.title, t.url!),
     favicon: t.favIconUrl ?? '',
     dateAdded: now,
-    binId: bin.id,
+    binId: null,
   }))
 
-  await saveBins([bin, ...bins])
-  await saveStashedTabs([...stashed, ...existing])
+  // AI pre-pass: place what fits into existing bins; the rest are leftovers.
+  let placed: Tab[] = []
+  let leftovers = built
+  if ((await isAiSortEnabled()) && bins.length > 0) {
+    const result = await sortIntoExistingBins(built, bins)
+    placed = result.placements.map(p => ({ ...p.tab, binId: p.binId }))
+    leftovers = result.leftovers
+  }
+
+  // Leftovers go into a fresh date bin — created only if there are any.
+  const newBins: Bin[] = []
+  let dateBinId: string | null = null
+  if (leftovers.length > 0) {
+    const dateBin: Bin = { id: crypto.randomUUID(), name: dateBinName(), parentId: null }
+    newBins.push(dateBin)
+    dateBinId = dateBin.id
+    leftovers = leftovers.map(t => ({ ...t, binId: dateBin.id }))
+  }
+
+  await saveBins([...newBins, ...bins])
+  await saveStashedTabs([...placed, ...leftovers, ...existing])
   await closeTabs(stashable.map(t => t.id).filter((id): id is number => id !== undefined))
-  return bin.id
+  return dateBinId
 }
 
 export async function renameStashedTab(id: string, name: string): Promise<Tab[]> {
