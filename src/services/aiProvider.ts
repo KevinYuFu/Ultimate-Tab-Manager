@@ -16,16 +16,18 @@ export type SortRequest = {
 // For each tab index, the chosen existing-bin index (or -1 when none fit).
 export type SortAssignment = { tab: number; bin: number }
 
-async function getApiKey(): Promise<string | null> {
-  const { aiApiKey } = await chrome.storage.local.get('aiApiKey')
-  return typeof aiApiKey === 'string' && aiApiKey.trim() ? aiApiKey.trim() : null
+// Dev key comes from .env (VITE_ANTHROPIC_API_KEY), injected at build time.
+// In a prod build there's no key here — the request goes through the proxy.
+function getApiKey(): string | null {
+  const key = import.meta.env.VITE_ANTHROPIC_API_KEY
+  return typeof key === 'string' && key.trim() ? key.trim() : null
 }
 
 // Ask the model which existing bin each tab belongs to. Uses a forced tool call
 // so the response is guaranteed-valid structured JSON. Throws on any failure;
 // the caller (aiSort) treats a throw as "sort nothing".
 export async function requestSort(req: SortRequest): Promise<SortAssignment[]> {
-  const key = await getApiKey()
+  const key = getApiKey()
   if (!key) throw new Error('No API key configured')
 
   const system =

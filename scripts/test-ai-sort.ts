@@ -1,23 +1,14 @@
 // Local smoke test for the REAL AI sort call (not a mock). Validates that the
 // provider's request/response shape actually works against Anthropic.
 //
-//   1. cp .env.example .env   and put your key in ANTHROPIC_API_KEY
+//   1. cp .env.example .env   and put your key in VITE_ANTHROPIC_API_KEY
 //   2. npm run test:ai
 //
 // Your key is read from .env (gitignored) — it never touches source or git.
+// The provider reads import.meta.env.VITE_ANTHROPIC_API_KEY; the npm script maps
+// that to process.env when bundling for node, so the real code runs unchanged.
 
 import type { Bin, Tab } from '../src/types'
-
-// The extension reads the key from chrome.storage; here we feed it the .env key
-// so we can exercise the real requestSort/sortIntoExistingBins unchanged.
-;(globalThis as any).chrome = {
-  storage: {
-    local: {
-      get: async (_key: string) => ({ aiApiKey: process.env.ANTHROPIC_API_KEY }),
-    },
-  },
-}
-
 import { sortIntoExistingBins } from '../src/services/aiSort'
 
 const bins: Bin[] = [
@@ -37,8 +28,8 @@ const tabs: Tab[] = [
 ]
 
 async function main() {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('No ANTHROPIC_API_KEY — copy .env.example to .env and add your key.')
+  if (!process.env.VITE_ANTHROPIC_API_KEY) {
+    console.error('No VITE_ANTHROPIC_API_KEY — copy .env.example to .env and add your key.')
     process.exit(1)
   }
   console.log('Calling the real AI sorter…\n')

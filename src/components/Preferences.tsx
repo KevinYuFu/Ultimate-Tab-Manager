@@ -46,20 +46,6 @@ export default function Preferences({
   const editingRef = useRef<Operation | null>(null)
   editingRef.current = editingOp
 
-  // Dev-only API key for calling the AI directly. Self-contained (stored in
-  // chrome.storage.local, where aiProvider reads it) — removed once the premium
-  // proxy exists.
-  const [apiKey, setApiKey] = useState('')
-  useEffect(() => {
-    chrome.storage.local.get('aiApiKey', r => {
-      if (typeof r.aiApiKey === 'string') setApiKey(r.aiApiKey)
-    })
-  }, [])
-  const saveApiKey = (value: string) => {
-    setApiKey(value)
-    chrome.storage.local.set({ aiApiKey: value })
-  }
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!editingRef.current) return
@@ -197,21 +183,6 @@ export default function Preferences({
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="prefs-section">
-          <div className="prefs-section-label">Advanced (Developer)</div>
-          <input
-            type="password"
-            className="text-input"
-            placeholder="Anthropic API key"
-            value={apiKey}
-            onChange={e => saveApiKey(e.target.value)}
-          />
-          <p className="shortcut-hint">
-            Temporary: calls the AI directly during development. Stored locally on this device.
-            Replaced by the premium service later.
-          </p>
         </div>
 
       </div>
