@@ -7,10 +7,18 @@
 // a tab because of the AI.
 
 import type { Bin, Tab } from '../types'
+import { hasPremium } from './premium'
 import { requestSort, type SortAssignment, type SortRequest } from './aiProvider'
 
 export type Placement = { tab: Tab; binId: string }
 export type SortResult = { placements: Placement[]; leftovers: Tab[] }
+
+// AI sorting runs only when it's a premium entitlement AND the user turned it on.
+export async function isAiSortEnabled(): Promise<boolean> {
+  if (!hasPremium()) return false
+  const { aiSortOnStash } = await chrome.storage.local.get('aiSortOnStash')
+  return aiSortOnStash === true
+}
 
 function host(url: string): string {
   try {
