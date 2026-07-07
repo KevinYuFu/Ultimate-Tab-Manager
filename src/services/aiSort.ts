@@ -11,7 +11,10 @@ import { hasPremium } from './premium'
 import { requestSort, type SortAssignment, type SortRequest } from './aiProvider'
 
 export type Placement = { tab: Tab; binId: string }
-export type SortResult = { placements: Placement[]; leftovers: Tab[] }
+// `ok` is false only when the AI call itself errored (network/malformed/no key).
+// It's true when the call succeeded — including when nothing matched. Callers
+// that retry (resolvePendingSorts) use it to keep the pending flag on error.
+export type SortResult = { placements: Placement[]; leftovers: Tab[]; ok: boolean }
 
 // AI sorting runs only when it's a premium entitlement AND the user turned it on.
 export async function isAiSortEnabled(): Promise<boolean> {
@@ -35,9 +38,10 @@ export async function sortIntoExistingBins(
   bins: Bin[],
   sort: (req: SortRequest) => Promise<SortAssignment[]> = requestSort,
 ): Promise<SortResult> {
-  // No bins → nothing to sort into; skip the call entirely (saves cost).
+  // No bins → nothing to sort into; skip the call entirely (saves cost). Not an
+  // error, so ok: true.
   if (tabs.length === 0 || bins.length === 0) {
-    return { placements: [], leftovers: tabs }
+    return { placements: [], leftovers: tabs, ok: true }
   }
 
   try {
@@ -63,8 +67,8 @@ export async function sortIntoExistingBins(
       if (binId) placements.push({ tab, binId })
       else leftovers.push(tab)
     })
-    return { placements, leftovers }
+    return { placements, leftovers, ok: true }
   } catch {
-    return { placements: [], leftovers: tabs }
+    return { placements: [], leftovers: tabs, ok: false }
   }
 }

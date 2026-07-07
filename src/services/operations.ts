@@ -51,12 +51,53 @@ export async function stashActiveTab(): Promise<Tab[]> {
     favicon: active.favIconUrl ?? '',
     dateAdded: Date.now(),
     binId: null,
+    // With AI on, park it at root flagged for sorting; resolvePendingSorts moves
+    // it into a bin afterwards (so the stash itself stays instant).
+    ...((await isAiSortEnabled()) ? { needsSort: true } : {}),
   }
 
   const updated = [tab, ...existing]
   await saveStashedTabs(updated)
   if (active.id !== undefined) await closeTab(active.id)
   return updated
+}
+
+// Sort any tabs still flagged `needsSort` into existing bins — one batched call
+// for all of them. Called when the manager opens and after a single stash; safe
+// to call repeatedly (coalesced, and a no-op when nothing is pending). Flags are
+// cleared only when the AI call actually succeeds, so a cancelled or errored run
+// leaves them pending for a later retry — that's what makes it self-healing.
+let resolving: Promise<void> | null = null
+export function resolvePendingSorts(): Promise<void> {
+  if (!resolving) {
+    resolving = doResolvePendingSorts().finally(() => {
+      resolving = null
+    })
+  }
+  return resolving
+}
+
+async function doResolvePendingSorts(): Promise<void> {
+  const tabs = await getStashedTabs()
+  const pending = tabs.filter(t => t.needsSort)
+  if (pending.length === 0) return
+
+  const bins = await getBins()
+  if (bins.length === 0) {
+    // Nothing to sort into — resolve in place (clear the flag; they stay at root).
+    await saveStashedTabs(tabs.map(t => (t.needsSort ? { ...t, needsSort: false } : t)))
+    return
+  }
+
+  const { placements, ok } = await sortIntoExistingBins(pending, bins)
+  if (!ok) return // AI call errored — leave the flags set so we retry next time.
+
+  const binOf = new Map(placements.map(p => [p.tab.id, p.binId]))
+  await saveStashedTabs(
+    tabs.map(t =>
+      t.needsSort ? { ...t, binId: binOf.get(t.id) ?? t.binId, needsSort: false } : t,
+    ),
+  )
 }
 
 export async function openStashedTab(tab: Tab): Promise<void> {
