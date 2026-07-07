@@ -1,4 +1,4 @@
-import { Globe, Pencil, Trash2 } from 'lucide-react'
+import { Globe, LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { Tab } from '../types'
 
@@ -125,6 +125,9 @@ export default function TabRow({
       ) : (
         <>
           <span className="tab-name">{tab.name}</span>
+          {tab.needsSort && (
+            <LoaderCircle className="tab-spinner" size={12} strokeWidth={2} aria-label="Sorting…" />
+          )}
           <span className="tab-host">{hostname(tab.url)}</span>
           {/* Stop dblclick here: after a delete the next row shifts under the
               cursor, so a rapid second click on this button would otherwise
