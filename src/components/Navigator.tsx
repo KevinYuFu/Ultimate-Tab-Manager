@@ -5,7 +5,6 @@ import { captureKey, displayKey } from '../utils'
 import {
   createBin,
   deleteBin,
-  deleteStashedTab,
   deleteStashedTabs,
   listBins,
   listStashedTabs,
@@ -170,11 +169,11 @@ export default function Navigator({
   }, [])
 
   // ── Tabs ──
+  // Deleting a tab that's part of the selection deletes the whole selection
+  // (matches drag); deleting an unselected tab removes just that one.
   const handleDeleteTab = async (id: string) => {
-    await recordDeleteTabs([id])
-    await deleteStashedTab(id)
-    await refresh()
-    sel.deselectTab(id)
+    const ids = sel.selectedIds.has(id) && sel.selectedIds.size > 1 ? [...sel.selectedIds] : [id]
+    await handleDeleteTabs(ids)
   }
 
   const handleDeleteTabs = async (ids: string[]) => {
