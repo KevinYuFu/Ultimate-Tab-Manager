@@ -12,7 +12,7 @@ import {
   openStashedTab,
   renameBin,
   renameStashedTab,
-  resolvePendingSorts,
+  aiSortPendingTabs,
   stashActiveTab,
   stashAllTabs,
 } from '../services/operations'
@@ -126,7 +126,7 @@ export default function Navigator({
   useEffect(() => {
     refresh()
     // Sort any tabs left pending from a previous session, then re-render.
-    resolvePendingSorts().then(refresh)
+    aiSortPendingTabs().then(refresh)
   }, [])
 
   const handleNewBin = async () => {
@@ -141,7 +141,7 @@ export default function Navigator({
   const handleStash = async () => {
     await stashActiveTab()
     await refresh() // show it immediately (pending), then sort in the background
-    resolvePendingSorts().then(refresh)
+    aiSortPendingTabs().then(refresh)
   }
 
   const handleStashAll = async () => {

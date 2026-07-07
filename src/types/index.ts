@@ -8,7 +8,7 @@ export type Tab = {
   dateAdded: number
   binId: string | null
   // Set when the tab was stashed with AI sorting on but hasn't been sorted into
-  // a bin yet. resolvePendingSorts clears it once the AI has processed the tab.
+  // a bin yet. aiSortPendingTabs clears it once the AI has processed the tab.
   needsSort?: boolean
 }
 

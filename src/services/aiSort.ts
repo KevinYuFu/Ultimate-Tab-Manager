@@ -13,7 +13,7 @@ import { requestSort, type SortAssignment, type SortRequest } from './aiProvider
 export type Placement = { tab: Tab; binId: string }
 // `succeeded` is false only when the AI call itself errored (network / malformed
 // response / no key). It's true when the call ran — including when nothing
-// matched. Callers that retry (resolvePendingSorts) use it to keep the pending
+// matched. Callers that retry (aiSortPendingTabs) use it to keep the pending
 // flag on error rather than giving up.
 export type SortResult = { placements: Placement[]; leftovers: Tab[]; succeeded: boolean }
 

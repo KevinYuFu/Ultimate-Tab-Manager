@@ -51,7 +51,7 @@ export async function stashActiveTab(): Promise<Tab[]> {
     favicon: active.favIconUrl ?? '',
     dateAdded: Date.now(),
     binId: null,
-    // With AI on, park it at root flagged for sorting; resolvePendingSorts moves
+    // With AI on, park it at root flagged for sorting; aiSortPendingTabs moves
     // it into a bin afterwards (so the stash itself stays instant).
     ...((await isAiSortEnabled()) ? { needsSort: true } : {}),
   }
@@ -67,17 +67,17 @@ export async function stashActiveTab(): Promise<Tab[]> {
 // to call repeatedly (coalesced, and a no-op when nothing is pending). Flags are
 // cleared only when the AI call actually succeeds, so a cancelled or errored run
 // leaves them pending for a later retry — that's what makes it self-healing.
-let resolving: Promise<void> | null = null
-export function resolvePendingSorts(): Promise<void> {
-  if (!resolving) {
-    resolving = doResolvePendingSorts().finally(() => {
-      resolving = null
+let sorting: Promise<void> | null = null
+export function aiSortPendingTabs(): Promise<void> {
+  if (!sorting) {
+    sorting = doAiSortPendingTabs().finally(() => {
+      sorting = null
     })
   }
-  return resolving
+  return sorting
 }
 
-async function doResolvePendingSorts(): Promise<void> {
+async function doAiSortPendingTabs(): Promise<void> {
   const tabs = await getStashedTabs()
   const pending = tabs.filter(t => t.needsSort)
   if (pending.length === 0) return
