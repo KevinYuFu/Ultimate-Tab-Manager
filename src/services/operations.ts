@@ -89,8 +89,8 @@ async function doResolvePendingSorts(): Promise<void> {
     return
   }
 
-  const { placements, ok } = await sortIntoExistingBins(pending, bins)
-  if (!ok) return // AI call errored — leave the flags set so we retry next time.
+  const { placements, succeeded } = await sortIntoExistingBins(pending, bins)
+  if (!succeeded) return // AI call errored — leave the flags set to retry later.
 
   const binOf = new Map(placements.map(p => [p.tab.id, p.binId]))
   await saveStashedTabs(
