@@ -123,10 +123,18 @@ export default function Navigator({
     onNestInto: id => setExpanded(prev => new Set(prev).add(id)),
   })
 
+  // Ask the background worker to AI-sort any pending tabs (it survives the popup
+  // closing). If it isn't reachable, sort here instead. Refresh when it's done.
+  const sortPending = () => {
+    chrome.runtime
+      .sendMessage({ type: 'AI_SORT_PENDING' })
+      .then(() => refresh())
+      .catch(() => aiSortPendingTabs().then(refresh))
+  }
+
   useEffect(() => {
     refresh()
-    // Sort any tabs left pending from a previous session, then re-render.
-    aiSortPendingTabs().then(refresh)
+    sortPending() // catch tabs left pending from a previous session
   }, [])
 
   const handleNewBin = async () => {
@@ -141,7 +149,7 @@ export default function Navigator({
   const handleStash = async () => {
     await stashActiveTab()
     await refresh() // show it immediately (pending), then sort in the background
-    aiSortPendingTabs().then(refresh)
+    sortPending()
   }
 
   const handleStashAll = async () => {

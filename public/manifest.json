@@ -7,6 +7,10 @@
     "default_popup": "popup.html",
     "default_title": "Ultimate Tab Manager"
   },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
   "permissions": ["tabs", "storage"],
   "host_permissions": ["https://api.anthropic.com/*"]
 }
