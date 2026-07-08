@@ -13,9 +13,11 @@ import {
   renameBin,
   renameStashedTab,
   aiSortPendingTabs,
+  sortBin,
   stashActiveTab,
   stashAllTabs,
 } from '../services/operations'
+import { hasPremium } from '../services/premium'
 import {
   recordCreateBin,
   recordDeleteBin,
@@ -69,8 +71,12 @@ export default function Navigator({
   // set per-action: clicking/entering a bin scopes into it; arrowing onto a bin
   // scopes to that bin's level (its parent). See handleOpenBin / moveCursor.
   const [scope, setScope] = useState<string | null>(null)
+  // Which bin is mid AI-sort (shows a spinner on its button). null = none.
+  const [sortingBinId, setSortingBinId] = useState<string | null>(null)
 
   const sel = useSelection(tabs)
+  // AI sort is a premium entitlement; gate the per-bin sort button on it.
+  const premium = hasPremium()
 
   // Reset to root if the scope bin disappears (deleted/undone).
   useEffect(() => {
@@ -296,6 +302,19 @@ export default function Navigator({
     await refresh()
   }
 
+  // Sort this bin's tabs into the other bins (matches move out; leftovers stay).
+  // Runs in the foreground since the user is here clicking — the spinner keeps
+  // the bin's actions visible until it resolves.
+  const handleSortBin = async (id: string) => {
+    setSortingBinId(id)
+    try {
+      await sortBin(id)
+      await refresh()
+    } finally {
+      setSortingBinId(null)
+    }
+  }
+
   const handleCommitBinEdit = async (id: string, name: string) => {
     setEditing(null)
     const trimmed = name.trim()
@@ -472,8 +491,11 @@ export default function Navigator({
                 editing={editing?.kind === 'bin' && editing.id === bin.id}
                 dropInto={dnd.dropState?.kind === 'bin' && dnd.dropState.id === bin.id}
                 dragging={dnd.draggingItem?.kind === 'bin' && dnd.draggingItem.id === bin.id}
+                canSort={premium}
+                sorting={sortingBinId === bin.id}
                 onSelect={sel.selectBin}
                 onOpen={handleOpenBin}
+                onSort={handleSortBin}
                 onStartEdit={id => setEditing({ kind: 'bin', id })}
                 onCommitEdit={handleCommitBinEdit}
                 onCancelEdit={cancelEdit}

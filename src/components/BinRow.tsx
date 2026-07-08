@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder, Pencil, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 import type { Bin } from '../types'
 
@@ -11,8 +11,13 @@ type Props = {
   editing: boolean
   dropInto: boolean
   dragging: boolean
+  // AI sort: `canSort` gates the button on premium; `sorting` shows a spinner
+  // while this bin's sort is in flight.
+  canSort: boolean
+  sorting: boolean
   onSelect: (id: string) => void
   onOpen: (id: string) => void
+  onSort: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
   onCancelEdit: () => void
@@ -32,8 +37,11 @@ export default function BinRow({
   editing,
   dropInto,
   dragging,
+  canSort,
+  sorting,
   onSelect,
   onOpen,
+  onSort,
   onStartEdit,
   onCommitEdit,
   onCancelEdit,
@@ -65,7 +73,7 @@ export default function BinRow({
 
   return (
     <div
-      className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}${dragging ? ' dragging' : ''}`}
+      className={`bin-row${selected ? ' selected' : ''}${dropInto ? ' drop-into' : ''}${dragging ? ' dragging' : ''}${sorting ? ' sorting' : ''}`}
       style={{ marginLeft: depth * 16 }}
       draggable={!editing}
       onClick={handleClick}
@@ -116,6 +124,23 @@ export default function BinRow({
         <>
           <span className="bin-name">{bin.name}</span>
           <div className="tab-actions">
+            {canSort && (
+              <button
+                className="tab-icon-btn"
+                title="Sort into other bins with AI"
+                disabled={sorting}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSort(bin.id)
+                }}
+              >
+                {sorting ? (
+                  <LoaderCircle className="tab-spinner" size={14} strokeWidth={2} />
+                ) : (
+                  <Sparkles size={13} strokeWidth={1.75} />
+                )}
+              </button>
+            )}
             <button
               className="tab-icon-btn"
               title="Rename bin"
