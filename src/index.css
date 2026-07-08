@@ -166,6 +166,50 @@ body.full-view .app {
   background: var(--surface);
 }
 
+/* Search bar (above the tree) */
+.nav-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.nav-search-icon {
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.nav-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 13px;
+}
+.nav-search-input::placeholder { color: var(--text-3); }
+.nav-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s;
+}
+.nav-search-clear:hover {
+  color: var(--text-1);
+  background: var(--surface-2);
+}
+
 /* Navigator tree area */
 .navigator-area {
   flex: 1;
