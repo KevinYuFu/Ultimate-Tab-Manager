@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { aiResponse, installChromeMock, type ChromeMock } from '../test/chromeMock'
-import { aiSortPendingTabs, stashActiveTab, stashAllTabs } from './operations'
+import { aiSortPendingTabs, sortBin, stashActiveTab, stashAllTabs } from './operations'
 import type { Bin, Tab } from '../types'
 
 let c: ChromeMock
@@ -181,5 +181,55 @@ describe('aiSortPendingTabs', () => {
     await Promise.all([aiSortPendingTabs(), aiSortPendingTabs(), aiSortPendingTabs()])
 
     expect(c.fetchCalls).toBe(1)
+  })
+})
+
+describe('sortBin', () => {
+  const inBin = (id: string, binId: string): Tab => ({ ...tab(id), binId })
+
+  it('moves a bin\'s tabs into the bins they fit; a no-fit stays in the bin', async () => {
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes'), bin('b2', 'Travel')]
+    c.store.tabs = [inBin('a', 'b0'), inBin('b', 'b0'), inBin('c', 'b0'), inBin('d', 'b1')]
+    // Sorting b0 → targets are the OTHERS [b1, b2] (indices 0, 1).
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 0 }, { tab: 1, bin: 1 }, { tab: 2, bin: -1 }])
+
+    await sortBin('b0')
+
+    expect(byId('a').binId).toBe('b1') // matched → moved out
+    expect(byId('b').binId).toBe('b2')
+    expect(byId('c').binId).toBe('b0') // no fit → stays in the sorted bin
+    expect(byId('d').binId).toBe('b1') // a tab in another bin is untouched
+  })
+
+  it('never offers the bin itself as a target', async () => {
+    // Targets exclude b0, so index 0 is b1 — a tab can't be "sorted" back into b0.
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes')]
+    c.store.tabs = [inBin('a', 'b0')]
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 0 }])
+
+    await sortBin('b0')
+
+    expect(byId('a').binId).toBe('b1')
+  })
+
+  it('is a no-op (no AI call) when there are no other bins', async () => {
+    c.store.bins = [bin('b0', 'Only')]
+    c.store.tabs = [inBin('a', 'b0')]
+
+    await sortBin('b0')
+
+    expect(c.fetchCalls).toBe(0)
+    expect(byId('a').binId).toBe('b0')
+  })
+
+  it('leaves the bin untouched when the AI errors', async () => {
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes')]
+    c.store.tabs = [inBin('a', 'b0'), inBin('b', 'b0')]
+    c.fetchImpl = async () => ({ ok: false, status: 500 })
+
+    await sortBin('b0')
+
+    expect(byId('a').binId).toBe('b0')
+    expect(byId('b').binId).toBe('b0')
   })
 })

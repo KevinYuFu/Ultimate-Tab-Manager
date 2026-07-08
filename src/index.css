@@ -362,7 +362,8 @@ body.full-view .app {
   transition: opacity 0.1s;
 }
 .tab-row:hover .tab-actions,
-.bin-row:hover .tab-actions { opacity: 1; }
+.bin-row:hover .tab-actions,
+.bin-row.sorting .tab-actions { opacity: 1; }
 
 .tab-icon-btn {
   display: flex;
@@ -380,6 +381,10 @@ body.full-view .app {
 .tab-icon-btn:hover {
   color: var(--text-1);
   background: var(--surface-2);
+}
+.tab-icon-btn:disabled {
+  cursor: default;
+  background: none;
 }
 
 .tab-name-input {
