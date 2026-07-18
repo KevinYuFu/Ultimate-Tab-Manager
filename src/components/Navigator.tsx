@@ -1,5 +1,5 @@
-import { Layers, Settings } from 'lucide-react'
-import { Fragment, useEffect, useState } from 'react'
+import { Layers, Search, Settings, X } from 'lucide-react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Bin, Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
 import {
@@ -18,6 +18,7 @@ import {
   stashAllTabs,
 } from '../services/operations'
 import { hasPremium } from '../services/premium'
+import { fuzzyMatch } from '../services/fuzzy'
 import {
   recordCreateBin,
   recordDeleteBin,
@@ -77,34 +78,63 @@ export default function Navigator({
   const sel = useSelection(tabs)
   // AI sort is a premium entitlement; gate the per-bin sort button on it.
   const premium = hasPremium()
+  // Fuzzy search: while `query` is non-empty the tree is filtered to matches.
+  const [query, setQuery] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
+  const searching = query.trim() !== ''
 
   // Reset to root if the scope bin disappears (deleted/undone).
   useEffect(() => {
     if (scope !== null && !bins.some(b => b.id === scope)) setScope(null)
   }, [bins, scope])
 
-  // Numbered items: the scope's direct children in render order (bins, then
-  // tabs); first 9 get badges 1–9. numberOf maps an id to its badge number.
-  const scopeItems = [
-    ...bins.filter(b => b.parentId === scope).map(b => ({ kind: 'bin' as const, id: b.id })),
-    ...tabs.filter(t => t.binId === scope).map(t => ({ kind: 'tab' as const, id: t.id })),
-  ]
-  const numberOf = new Map<string, number>()
-  scopeItems.slice(0, 9).forEach((item, i) => numberOf.set(item.id, i + 1))
+  // While searching, a tab matches on its name or (scheme-stripped) URL, and a
+  // bin is kept if it matches by name OR has any visible descendant — so the
+  // tree collapses to just the paths that lead to a match.
+  const cleanUrl = (url: string) => url.replace(/^https?:\/\//, '').replace(/^www\./, '')
+  const matchesTab = (t: Tab) =>
+    fuzzyMatch(query, t.name).matched || fuzzyMatch(query, cleanUrl(t.url)).matched
+  const visibleTabIds = new Set<string>()
+  const visibleBinIds = new Set<string>()
+  if (searching) {
+    for (const t of tabs) if (matchesTab(t)) visibleTabIds.add(t.id)
+    const keepBin = (id: string, name: string): boolean => {
+      let keep = fuzzyMatch(query, name).matched
+      for (const t of tabs) if (t.binId === id && visibleTabIds.has(t.id)) keep = true
+      for (const b of bins) if (b.parentId === id && keepBin(b.id, b.name)) keep = true
+      if (keep) visibleBinIds.add(id)
+      return keep
+    }
+    for (const b of bins) if (b.parentId === null) keepBin(b.id, b.name)
+  }
+  const showBin = (b: Bin) => !searching || visibleBinIds.has(b.id)
+  const showTab = (t: Tab) => !searching || visibleTabIds.has(t.id)
 
-  // The flat visible tree in render order (bins with their expanded subtrees,
-  // then tabs) — the sequence the arrow keys walk through.
+  // The flat visible tree in render order (bins with their subtrees, then tabs)
+  // — the sequence the arrow keys walk. When searching we recurse regardless of
+  // the collapse state, so matches buried in closed bins are still reachable.
   const visibleItems: { kind: 'bin' | 'tab'; id: string }[] = []
   const walkVisible = (parentId: string | null) => {
-    for (const b of bins.filter(x => x.parentId === parentId)) {
+    for (const b of bins.filter(x => x.parentId === parentId && showBin(x))) {
       visibleItems.push({ kind: 'bin', id: b.id })
-      if (expanded.has(b.id)) walkVisible(b.id)
+      if (searching || expanded.has(b.id)) walkVisible(b.id)
     }
-    for (const t of tabs.filter(x => x.binId === parentId)) {
+    for (const t of tabs.filter(x => x.binId === parentId && showTab(x))) {
       visibleItems.push({ kind: 'tab', id: t.id })
     }
   }
   walkVisible(null)
+
+  // Numbered items (badges 1–9): while searching, the top visible results; else
+  // the current scope's direct children in render order.
+  const scopeItems = searching
+    ? visibleItems.slice(0, 9)
+    : [
+        ...bins.filter(b => b.parentId === scope).map(b => ({ kind: 'bin' as const, id: b.id })),
+        ...tabs.filter(t => t.binId === scope).map(t => ({ kind: 'tab' as const, id: t.id })),
+      ]
+  const numberOf = new Map<string, number>()
+  scopeItems.slice(0, 9).forEach((item, i) => numberOf.set(item.id, i + 1))
 
   // Keep the selected row visible when moving through it with the keyboard.
   // block:'nearest' is a no-op when it's already on screen (e.g. mouse clicks).
@@ -113,6 +143,21 @@ export default function Navigator({
       .querySelector('.tab-row.selected, .bin-row.selected')
       ?.scrollIntoView({ block: 'nearest' })
   }, [sel.selectedIds, sel.selectedBinId])
+
+  // As the query narrows, keep the selection on the top result so ↓/Enter feel
+  // natural — but only when the current selection has dropped out of the results.
+  useEffect(() => {
+    if (!searching) return
+    const first = visibleItems[0]
+    if (!first) return
+    const stillVisible = visibleItems.some(it =>
+      it.kind === 'bin' ? sel.selectedBinId === it.id : sel.selectedIds.has(it.id),
+    )
+    if (stillVisible) return
+    if (first.kind === 'bin') sel.selectBin(first.id)
+    else sel.selectTabId(first.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query])
 
   const refresh = async () => {
     const [t, b] = await Promise.all([listStashedTabs(), listBins()])
@@ -366,6 +411,26 @@ export default function Navigator({
     }
   }
 
+  // ── Search ──
+  const handleFocusSearch = () => searchRef.current?.focus()
+
+  const clearSearch = () => {
+    setQuery('')
+    searchRef.current?.blur()
+    sel.clear()
+  }
+
+  // The search box owns its keys: arrows move the selection through the filtered
+  // results, Enter opens it, Escape clears. Typed letters just edit the query —
+  // the global hotkey handler bails while the box is focused (see below).
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); clearSearch() }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); moveCursor(1) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveCursor(-1) }
+    else if (e.key === 'Enter') { e.preventDefault(); handleOpenSelection() }
+    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') e.preventDefault()
+  }
+
   // Single source of truth for both the toolbar buttons and the keyboard
   // handler below. Adding an op here wires up its hotkey automatically; an op
   // with no handler (e.g. undo) stays inert and its button renders disabled.
@@ -378,6 +443,7 @@ export default function Navigator({
     delete: handleDeleteSelection,
     open: handleOpenSelection,
     goBack: handleGoBack,
+    search: handleFocusSearch,
     undo: handleUndo,
     redo: handleRedo,
   }
@@ -388,6 +454,8 @@ export default function Navigator({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (editing) return
+      // While the search box is focused it owns its keys (see handleSearchKeyDown).
+      if (document.activeElement === searchRef.current) return
       // Quick-select: 1–9 acts on the Nth item in the current scope.
       if (!e.ctrlKey && !e.metaKey && !e.altKey && /^[1-9]$/.test(e.key)) {
         const item = scopeItems[Number(e.key) - 1]
@@ -426,9 +494,17 @@ export default function Navigator({
         o => keybindings[o] === combo,
       )
       const handler = op && handlers[op]
-      if (!handler) return
-      e.preventDefault()
-      handler()
+      if (handler) {
+        e.preventDefault()
+        handler()
+        return
+      }
+      // A bare `f` also opens search, on top of the rebindable search key. Checked
+      // after the lookup so an explicit rebinding to F still wins.
+      if (combo === 'F') {
+        e.preventDefault()
+        handlers.search?.()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -471,8 +547,8 @@ export default function Navigator({
   // Recursively render one level of the tree: child bins (each with their
   // subtree when expanded), then child tabs.
   const renderLevel = (parentId: string | null, depth: number): React.ReactNode => {
-    const childBins = bins.filter(b => b.parentId === parentId)
-    const childTabs = tabs.filter(t => t.binId === parentId)
+    const childBins = bins.filter(b => b.parentId === parentId && showBin(b))
+    const childTabs = tabs.filter(t => t.binId === parentId && showTab(t))
     const lineStyle = { marginLeft: depth * 16 + 6 }
     return (
       <>
@@ -485,7 +561,7 @@ export default function Navigator({
               <BinRow
                 bin={bin}
                 depth={depth}
-                expanded={expanded.has(bin.id)}
+                expanded={searching || expanded.has(bin.id)}
                 selected={sel.selectedBinId === bin.id}
                 number={numberOf.get(bin.id)}
                 editing={editing?.kind === 'bin' && editing.id === bin.id}
@@ -505,7 +581,7 @@ export default function Navigator({
                 onDrop={dnd.itemDrop}
                 onDragEnd={dnd.dragEnd}
               />
-              {expanded.has(bin.id) && renderLevel(bin.id, depth + 1)}
+              {(searching || expanded.has(bin.id)) && renderLevel(bin.id, depth + 1)}
               {after && <div className="drop-line" style={lineStyle} />}
             </Fragment>
           )
@@ -518,6 +594,7 @@ export default function Navigator({
   }
 
   const isEmpty = tabs.length === 0 && bins.length === 0
+  const noMatches = searching && visibleItems.length === 0
 
   return (
     <div className="nav-view" onDragOver={dnd.viewDragOver} onDrop={dnd.viewDrop}>
@@ -543,6 +620,23 @@ export default function Navigator({
         </div>
       </header>
 
+      <div className="nav-search">
+        <Search className="nav-search-icon" size={14} strokeWidth={2} />
+        <input
+          ref={searchRef}
+          className="nav-search-input"
+          placeholder="Search tabs and bins…"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
+        />
+        {searching && (
+          <button className="nav-search-clear" onClick={clearSearch} title="Clear (Esc)">
+            <X size={14} strokeWidth={2} />
+          </button>
+        )}
+      </div>
+
       <div
         className={`navigator-area${dnd.dropState?.kind === 'root' ? ' drop-root' : ''}`}
         onClick={sel.clear}
@@ -553,6 +647,12 @@ export default function Navigator({
             <Layers size={36} className="empty-icon" strokeWidth={1.25} />
             <p className="empty-title">No stashed tabs</p>
             <p className="empty-hint">Stash a tab to get started</p>
+          </div>
+        ) : noMatches ? (
+          <div className="empty-state">
+            <Search size={32} className="empty-icon" strokeWidth={1.25} />
+            <p className="empty-title">No matches</p>
+            <p className="empty-hint">Nothing matches “{query.trim()}”</p>
           </div>
         ) : (
           <div className="tab-list">{renderLevel(null, 0)}</div>

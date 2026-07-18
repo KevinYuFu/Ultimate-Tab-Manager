@@ -54,6 +54,7 @@ export type Operation =
   | 'delete'
   | 'open'
   | 'goBack'
+  | 'search'
   | 'undo'
   | 'redo'
 
@@ -69,6 +70,7 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   delete: 'D',
   open: 'O',
   goBack: 'Backspace',
+  search: 'Ctrl+F',
   undo: 'Ctrl+Z',
   redo: 'Ctrl+Shift+Z',
 }
