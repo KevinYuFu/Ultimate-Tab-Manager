@@ -494,9 +494,17 @@ export default function Navigator({
         o => keybindings[o] === combo,
       )
       const handler = op && handlers[op]
-      if (!handler) return
-      e.preventDefault()
-      handler()
+      if (handler) {
+        e.preventDefault()
+        handler()
+        return
+      }
+      // A bare `f` also opens search, on top of the rebindable search key. Checked
+      // after the lookup so an explicit rebinding to F still wins.
+      if (combo === 'F') {
+        e.preventDefault()
+        handlers.search?.()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
