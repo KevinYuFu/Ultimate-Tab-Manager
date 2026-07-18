@@ -136,9 +136,14 @@ export default function Navigator({
   const numberOf = new Map<string, number>()
   scopeItems.slice(0, 9).forEach((item, i) => numberOf.set(item.id, i + 1))
 
-  // Keep the selected row visible when moving through it with the keyboard.
-  // block:'nearest' is a no-op when it's already on screen (e.g. mouse clicks).
+  // Follow the selection into view ONLY when arrow-key nav moved it (moveCursor
+  // sets this flag). Mouse clicks, deletes, and the auto-selected search result
+  // change the selection too, but scrolling to those yanks the viewport around —
+  // so they leave the scroll position alone.
+  const followSelectionRef = useRef(false)
   useEffect(() => {
+    if (!followSelectionRef.current) return
+    followSelectionRef.current = false
     document
       .querySelector('.tab-row.selected, .bin-row.selected')
       ?.scrollIntoView({ block: 'nearest' })
@@ -325,6 +330,7 @@ export default function Navigator({
   // bin), so the numbers re-map as you cross levels.
   const moveCursor = (delta: 1 | -1) => {
     if (visibleItems.length === 0) return
+    followSelectionRef.current = true // arrow nav should scroll to follow
     const cur = visibleItems.findIndex(it =>
       it.kind === 'bin' ? sel.selectedBinId === it.id : sel.selectedIds.has(it.id),
     )
