@@ -39,13 +39,28 @@ from:
 
 ### 3. Git workflow
 - **Never commit to `main`.** Always work on a feature branch.
-- Open a **PR for every change**; the user reviews and merges.
-- Run `npm run build` after changes to confirm it compiles before pushing.
+- Open a **PR for every change** and **push each update to that PR**, so the
+  user can always review the latest on GitHub. The user reviews and merges.
+- Run `npm run build` after every change so it compiles before pushing — the
+  user never has to touch the build.
 
 ### 4. Communicate before changing
 Talk through proposed changes and get agreement before editing — no large or
 unrequested rewrites. Never revert or resurrect code the user removed without
 asking first.
+
+### 5. Keep communication short and plain
+The user is dyslexic, so long or dense text is hard to read. Keep **everything
+you write — chat replies and PR text — short and straightforward**:
+- Lead with the point. Short sentences, plain words.
+- Use small chunks or bullets; cut anything the diff already shows.
+- Still explain new patterns (§2) — just say it simply, not at length.
+
+### 6. Don't propose features — scope is the user's call
+Build what's asked, and build it well. Do NOT invent or suggest new features,
+"gaps," or nice-to-haves — the user decides scope. You may still flag genuine
+bugs and code smells (that's your job); just don't dress a feature idea up as a
+gap. When a task is done, say it's done and stop.
 
 ## Architecture conventions
 - `src/components/` — React UI only (what things look like).
@@ -54,6 +69,30 @@ asking first.
   Chrome APIs directly.
 - `src/themes/`, `src/types/` — theme definitions and shared TypeScript types.
 - Icons come from `lucide-react` (no hand-authored SVG paths).
+
+## Design philosophy
+
+The feel we're building toward. These are the "why" behind the UX rules below;
+when a call is unclear, these break the tie.
+
+- **Clean and Mac-like.** The app should feel like a native macOS tool: calm,
+  minimal, uncluttered. Every element earns its place. When unsure, remove it.
+
+- **Make it right, not revertible.** Automated actions (e.g. AI sort) must be
+  good enough to trust. We do NOT add "undo the whole action" escape hatches to
+  cover for something that might misplace a tab — that hides a quality problem
+  instead of fixing it. If results are wrong often enough that reverting feels
+  necessary, that's a **bug to fix at the source**. Nudging one misplaced tab is
+  a normal manual move; bulk-reverting an automated action is not a feature we
+  build. (This is only about automated actions — the manual undo/redo of the
+  user's own edits stays.)
+
+- **Ambient info, not interruptions.** Tell the user what happened without making
+  them stop, look, or dismiss. Prefer a quiet, always-there status line over
+  toasts, badges, popups, or extra views. Info should be there when wanted and
+  ignorable when not. Anything the user must click or close is the wrong instinct
+  — e.g. a "sorted 3 tabs" popup is ruled out; a passive status line is the right
+  shape.
 
 ## UX principles
 - Solve interaction problems within the input modality already in use (e.g.
