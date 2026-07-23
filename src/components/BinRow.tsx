@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
+import { BrushCleaning, ChevronDown, ChevronRight, Folder, LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 import type { Bin } from '../types'
 
@@ -137,7 +137,7 @@ export default function BinRow({
                 {sorting ? (
                   <LoaderCircle className="tab-spinner" size={14} strokeWidth={2} />
                 ) : (
-                  <Sparkles size={13} strokeWidth={1.75} />
+                  <BrushCleaning size={13} strokeWidth={1.75} />
                 )}
               </button>
             )}
