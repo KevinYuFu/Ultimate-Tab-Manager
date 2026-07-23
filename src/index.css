@@ -508,12 +508,6 @@ body.full-view .app {
   border-color: var(--border-md);
   background: var(--surface);
 }
-/* Icon-only action button (e.g. Tidy Root) — square, no text padding. */
-.action-btn-icon {
-  padding: 0;
-  width: 26px;
-  justify-content: center;
-}
 
 /* Status bar */
 .status-bar {

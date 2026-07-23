@@ -692,10 +692,11 @@ export default function Navigator({
             <span>{label}</span>
           </button>
         ))}
-        {/* Tidy Root: icon-only (the accessible name lives in aria-label/title). */}
+        {/* Tidy Root: broom icon + short "Tidy" label; fuller name in aria-label
+            / title for screen readers and the tooltip. */}
         {premium && (
           <button
-            className="action-btn action-btn-icon"
+            className="action-btn"
             onClick={handleTidyRoot}
             disabled={tidyingRoot}
             aria-label="Tidy Root"
@@ -706,6 +707,7 @@ export default function Navigator({
             ) : (
               <BrushCleaning size={15} strokeWidth={1.75} />
             )}
+            <span>Tidy</span>
           </button>
         )}
       </div>
