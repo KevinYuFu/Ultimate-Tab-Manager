@@ -39,13 +39,22 @@ from:
 
 ### 3. Git workflow
 - **Never commit to `main`.** Always work on a feature branch.
-- Open a **PR for every change**; the user reviews and merges.
-- Run `npm run build` after changes to confirm it compiles before pushing.
+- Open a **PR for every change** and **push each update to that PR**, so the
+  user can always review the latest on GitHub. The user reviews and merges.
+- Run `npm run build` after every change so it compiles before pushing — the
+  user never has to touch the build.
 
 ### 4. Communicate before changing
 Talk through proposed changes and get agreement before editing — no large or
 unrequested rewrites. Never revert or resurrect code the user removed without
 asking first.
+
+### 5. Keep communication short and plain
+The user is dyslexic, so long or dense text is hard to read. Keep **everything
+you write — chat replies and PR text — short and straightforward**:
+- Lead with the point. Short sentences, plain words.
+- Use small chunks or bullets; cut anything the diff already shows.
+- Still explain new patterns (§2) — just say it simply, not at length.
 
 ## Architecture conventions
 - `src/components/` — React UI only (what things look like).
