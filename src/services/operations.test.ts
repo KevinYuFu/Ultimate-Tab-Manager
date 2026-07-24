@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { aiResponse, installChromeMock, type ChromeMock } from '../test/chromeMock'
-import { aiSortPendingTabs, sortBin, stashActiveTab, stashAllTabs } from './operations'
+import { aiSortPendingTabs, sortBin, sortRootTabs, stashActiveTab, stashAllTabs } from './operations'
 import type { Bin, Tab } from '../types'
 
 let c: ChromeMock
@@ -231,5 +231,42 @@ describe('sortBin', () => {
 
     expect(byId('a').binId).toBe('b0')
     expect(byId('b').binId).toBe('b0')
+  })
+})
+
+describe('sortRootTabs', () => {
+  const inBin = (id: string, binId: string): Tab => ({ ...tab(id), binId })
+
+  it('files loose tabs into bins; a no-fit stays at root, binned tabs untouched', async () => {
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes')]
+    c.store.tabs = [tab('a'), tab('b'), inBin('c', 'b0')] // a, b loose at root; c binned
+    // Root tabs in order [a, b]; every bin is a target ([b0, b1]).
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 1 }, { tab: 1, bin: -1 }])
+
+    await sortRootTabs()
+
+    expect(byId('a').binId).toBe('b1') // matched → filed into a bin
+    expect(byId('b').binId).toBeNull() // no fit → stays loose at root
+    expect(byId('c').binId).toBe('b0') // already binned → untouched
+  })
+
+  it('is a no-op (no AI call) when there are no bins', async () => {
+    c.store.bins = []
+    c.store.tabs = [tab('a')]
+
+    await sortRootTabs()
+
+    expect(c.fetchCalls).toBe(0)
+    expect(byId('a').binId).toBeNull()
+  })
+
+  it('leaves loose tabs at root when the AI errors', async () => {
+    c.store.bins = [bin('b0', 'Work')]
+    c.store.tabs = [tab('a')]
+    c.fetchImpl = async () => ({ ok: false, status: 500 })
+
+    await sortRootTabs()
+
+    expect(byId('a').binId).toBeNull()
   })
 })

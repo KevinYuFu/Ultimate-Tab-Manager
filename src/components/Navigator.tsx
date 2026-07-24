@@ -1,4 +1,4 @@
-import { Layers, Search, Settings, X } from 'lucide-react'
+import { Layers, LoaderCircle, Search, Settings, Sparkles, X } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Bin, Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
@@ -14,6 +14,7 @@ import {
   renameStashedTab,
   aiSortPendingTabs,
   sortBin,
+  sortRootTabs,
   stashActiveTab,
   stashAllTabs,
 } from '../services/operations'
@@ -74,6 +75,8 @@ export default function Navigator({
   const [scope, setScope] = useState<string | null>(null)
   // Which bin is mid AI-sort (shows a spinner on its button). null = none.
   const [sortingBinId, setSortingBinId] = useState<string | null>(null)
+  // True while "Tidy Root" is sorting the loose tabs (shows a spinner).
+  const [tidyingRoot, setTidyingRoot] = useState(false)
 
   const sel = useSelection(tabs)
   // AI sort is a premium entitlement; gate the per-bin sort button on it.
@@ -366,6 +369,17 @@ export default function Navigator({
     }
   }
 
+  // Tidy Root: AI-sort the loose (root) tabs into existing bins; leftovers stay.
+  const handleTidyRoot = async () => {
+    setTidyingRoot(true)
+    try {
+      await sortRootTabs()
+      await refresh()
+    } finally {
+      setTidyingRoot(false)
+    }
+  }
+
   const handleCommitBinEdit = async (id: string, name: string) => {
     setEditing(null)
     const trimmed = name.trim()
@@ -450,6 +464,7 @@ export default function Navigator({
     open: handleOpenSelection,
     goBack: handleGoBack,
     search: handleFocusSearch,
+    tidyRoot: handleTidyRoot,
     undo: handleUndo,
     redo: handleRedo,
   }
@@ -677,6 +692,24 @@ export default function Navigator({
             <span>{label}</span>
           </button>
         ))}
+        {/* Tidy Root: broom icon + short "Tidy" label; fuller name in aria-label
+            / title for screen readers and the tooltip. */}
+        {premium && (
+          <button
+            className="action-btn"
+            onClick={handleTidyRoot}
+            disabled={tidyingRoot}
+            aria-label="Tidy Root"
+            title="Tidy Root"
+          >
+            {tidyingRoot ? (
+              <LoaderCircle className="tab-spinner" size={15} strokeWidth={2} />
+            ) : (
+              <Sparkles size={15} strokeWidth={1.75} />
+            )}
+            <span>Tidy</span>
+          </button>
+        )}
       </div>
 
       <div className="status-bar">

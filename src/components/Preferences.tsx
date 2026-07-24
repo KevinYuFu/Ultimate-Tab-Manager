@@ -12,6 +12,7 @@ const OPERATION_LABELS: { op: Operation; label: string }[] = [
   { op: 'open',         label: 'Open tab(s)' },
   { op: 'goBack',       label: 'Go back a scope' },
   { op: 'search',       label: 'Search' },
+  { op: 'tidyRoot',     label: 'Tidy Root' },
   { op: 'editName',     label: 'Edit tab name' },
   { op: 'delete',       label: 'Delete' },
   { op: 'openFullView', label: 'Open full view' },
