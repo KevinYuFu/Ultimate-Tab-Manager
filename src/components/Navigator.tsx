@@ -1,4 +1,4 @@
-import { Layers, LoaderCircle, Search, Settings, X } from 'lucide-react'
+import { Layers, LoaderCircle, Search, Settings, Sparkles, X } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { Bin, Keybindings, Operation, Tab } from '../types'
 import { captureKey, displayKey } from '../utils'
@@ -33,7 +33,6 @@ import { useDragAndDrop } from '../hooks/useDragAndDrop'
 import { useSelection } from '../hooks/useSelection'
 import BinRow from './BinRow'
 import TabRow from './TabRow'
-import TidyIcon from './TidyIcon'
 
 const PRIMARY: { op: Operation; label: string }[] = [
   { op: 'stash',        label: 'Stash' },
@@ -706,7 +705,7 @@ export default function Navigator({
             {tidyingRoot ? (
               <LoaderCircle className="tab-spinner" size={15} strokeWidth={2} />
             ) : (
-              <TidyIcon size={15} />
+              <Sparkles size={15} strokeWidth={1.75} />
             )}
             <span>Tidy</span>
           </button>
