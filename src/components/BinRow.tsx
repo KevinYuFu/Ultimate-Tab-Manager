@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, ExternalLink, Folder, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, Folder, FolderOpen, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 import type { Bin } from '../types'
 
@@ -134,7 +134,7 @@ export default function BinRow({
                 onOpenTabs(bin.id)
               }}
             >
-              <ExternalLink size={13} strokeWidth={1.75} />
+              <FolderOpen size={13} strokeWidth={1.75} />
             </button>
             {canSort && (
               <button
