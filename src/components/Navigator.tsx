@@ -280,6 +280,11 @@ export default function Navigator({
     setScope(willExpand ? id : bins.find(b => b.id === id)?.parentId ?? null)
   }
 
+  // Open every tab in a bin (its direct tabs) in the browser; they stay stashed.
+  const handleOpenBinTabs = (binId: string) => {
+    tabs.filter(t => t.binId === binId).forEach(openStashedTab)
+  }
+
   // Enter (drill into) a bin: expand it, scope into it, and move the cursor to
   // its first child so its children become the numbered set. An empty bin just
   // opens with the cursor left on it.
@@ -592,6 +597,7 @@ export default function Navigator({
                 sorting={sortingBinId === bin.id}
                 onSelect={sel.selectBin}
                 onOpen={handleOpenBin}
+                onOpenTabs={handleOpenBinTabs}
                 onSort={handleSortBin}
                 onStartEdit={id => setEditing({ kind: 'bin', id })}
                 onCommitEdit={handleCommitBinEdit}
