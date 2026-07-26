@@ -55,6 +55,7 @@ export type Operation =
   | 'open'
   | 'goBack'
   | 'search'
+  | 'tidyRoot'
   | 'undo'
   | 'redo'
 
@@ -71,6 +72,7 @@ export const DEFAULT_KEYBINDINGS: Keybindings = {
   open: 'O',
   goBack: 'Backspace',
   search: 'Ctrl+F',
+  tidyRoot: 'T',
   undo: 'Ctrl+Z',
   redo: 'Ctrl+Shift+Z',
 }

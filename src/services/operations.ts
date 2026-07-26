@@ -101,26 +101,32 @@ async function doAiSortPendingTabs(): Promise<void> {
   )
 }
 
-// Sort one bin's tabs into the OTHER bins by topic (AI, on demand). Tabs that
-// best fit a different bin move there; tabs that fit none stay in this bin. The
-// bin being sorted is excluded as a target, so "leftovers stay put" is automatic.
-// Premium-gated and fully graceful: no premium, no other bins, or an AI error
-// leaves every tab exactly where it was. Returns the updated tab list.
-export async function sortBin(binId: string): Promise<Tab[]> {
+// Sort a bin's tabs into the OTHER bins by topic (AI, on demand). `binId` is the
+// bin to sort, or null for the loose tabs at root. Tabs that best fit a different
+// bin move there; tabs that fit none stay put. The source bin is excluded as a
+// target (null excludes nothing — so root sorts against every bin). Premium-gated.
+// Returns the updated tab list.
+export async function sortBin(binId: string | null): Promise<Tab[]> {
   const tabs = await getStashedTabs()
   if (!hasPremium()) return tabs
 
   const inBin = tabs.filter(t => t.binId === binId)
-  const others = (await getBins()).filter(b => b.id !== binId)
-  if (inBin.length === 0 || others.length === 0) return tabs
+  const targets = (await getBins()).filter(b => b.id !== binId)
+  if (inBin.length === 0 || targets.length === 0) return tabs
 
-  const { placements, succeeded } = await sortIntoExistingBins(inBin, others)
-  if (!succeeded) return tabs // AI errored — leave the bin untouched.
+  const { placements, succeeded } = await sortIntoExistingBins(inBin, targets)
+  if (!succeeded) return tabs // AI errored — leave everything untouched.
 
   const binOf = new Map(placements.map(p => [p.tab.id, p.binId]))
   const updated = tabs.map(t => (binOf.has(t.id) ? { ...t, binId: binOf.get(t.id)! } : t))
   await saveStashedTabs(updated)
   return updated
+}
+
+// "Tidy Root": sort the loose tabs at root into existing bins (leftovers stay
+// loose). Same machinery as sortBin, with root as the source.
+export function sortRootTabs(): Promise<Tab[]> {
+  return sortBin(null)
 }
 
 export async function openStashedTab(tab: Tab): Promise<void> {
