@@ -104,8 +104,7 @@ async function doAiSortPendingTabs(): Promise<void> {
 // Sort a bin's tabs into the OTHER bins by topic (AI, on demand). `binId` is the
 // bin to sort, or null for the loose tabs at root. Tabs that best fit a different
 // bin move there; tabs that fit none stay put. The source bin is excluded as a
-// target (null excludes nothing — so root sorts against every bin). Does nothing
-// without premium; an AI error or no other bins leaves every tab where it was.
+// target (null excludes nothing — so root sorts against every bin). Premium-gated.
 // Returns the updated tab list.
 export async function sortBin(binId: string | null): Promise<Tab[]> {
   const tabs = await getStashedTabs()
