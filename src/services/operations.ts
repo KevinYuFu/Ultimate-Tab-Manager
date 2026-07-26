@@ -105,13 +105,15 @@ async function doAiSortPendingTabs(): Promise<void> {
 // bin to sort, or null for the loose tabs at root. Tabs that best fit a different
 // bin move there; tabs that fit none stay put. The source bin is excluded as a
 // target (null excludes nothing — so root sorts against every bin). Premium-gated.
+// An emptied bin is deleted (never root).
 // Returns the updated tab list.
 export async function sortBin(binId: string | null): Promise<Tab[]> {
   const tabs = await getStashedTabs()
   if (!hasPremium()) return tabs
 
+  const bins = await getBins()
   const inBin = tabs.filter(t => t.binId === binId)
-  const targets = (await getBins()).filter(b => b.id !== binId)
+  const targets = bins.filter(b => b.id !== binId)
   if (inBin.length === 0 || targets.length === 0) return tabs
 
   const { placements, succeeded } = await sortIntoExistingBins(inBin, targets)
@@ -120,6 +122,14 @@ export async function sortBin(binId: string | null): Promise<Tab[]> {
   const binOf = new Map(placements.map(p => [p.tab.id, p.binId]))
   const updated = tabs.map(t => (binOf.has(t.id) ? { ...t, binId: binOf.get(t.id)! } : t))
   await saveStashedTabs(updated)
+
+  // bin now empty — no tabs, no sub-bins → delete it
+  if (binId !== null &&
+      !updated.some(t => t.binId === binId) &&
+      !bins.some(b => b.parentId === binId)) {
+    await saveBins(bins.filter(b => b.id !== binId))
+  }
+
   return updated
 }
 

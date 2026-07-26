@@ -232,6 +232,43 @@ describe('sortBin', () => {
     expect(byId('a').binId).toBe('b0')
     expect(byId('b').binId).toBe('b0')
   })
+
+  it('deletes the bin when the sort empties it (all tabs move out)', async () => {
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes')]
+    c.store.tabs = [inBin('a', 'b0'), inBin('b', 'b0')]
+    // Sorting b0 → the only target is b1 (index 0); both tabs fit it, so b0 empties.
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 0 }, { tab: 1, bin: 0 }])
+
+    await sortBin('b0')
+
+    expect(byId('a').binId).toBe('b1')
+    expect(byId('b').binId).toBe('b1')
+    expect(bins().some(b => b.id === 'b0')).toBe(false) // emptied → deleted
+  })
+
+  it('keeps the bin when not every tab moves out', async () => {
+    c.store.bins = [bin('b0', 'Work'), bin('b1', 'Recipes')]
+    c.store.tabs = [inBin('a', 'b0'), inBin('b', 'b0')]
+    // a fits b1; b fits nothing → stays in b0, so b0 isn't empty.
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 0 }, { tab: 1, bin: -1 }])
+
+    await sortBin('b0')
+
+    expect(byId('b').binId).toBe('b0')
+    expect(bins().some(b => b.id === 'b0')).toBe(true) // still holds a tab → kept
+  })
+
+  it('keeps an emptied bin that still has sub-bins', async () => {
+    c.store.bins = [bin('b0', 'Work'), { id: 'b0a', name: 'Sub', parentId: 'b0' }, bin('b1', 'Recipes')]
+    c.store.tabs = [inBin('a', 'b0')]
+    // targets = [b0a, b1]; a → b1 (index 1). b0's tabs empty but it has a sub-bin.
+    c.fetchImpl = aiResponse([{ tab: 0, bin: 1 }])
+
+    await sortBin('b0')
+
+    expect(byId('a').binId).toBe('b1')
+    expect(bins().some(b => b.id === 'b0')).toBe(true) // has a sub-bin → kept
+  })
 })
 
 describe('sortRootTabs', () => {
