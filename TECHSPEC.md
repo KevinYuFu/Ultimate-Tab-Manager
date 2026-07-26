@@ -192,3 +192,14 @@ There are many options on how to close a tab:
 
 All data is stored locally. Nothing is sent to any server.
 
+## 11. Future ideas
+
+Deliberately deferred — not building yet, captured so the idea isn't lost.
+
+- **Last-action status line.** A quiet line at the bottom of the extension
+  showing what the last action did (e.g. "Tidied 12 loose tabs into bins").
+  Ambient and glanceable — the outcome is there without opening a view or
+  dismissing a popup, and ignorable when not wanted. This is the
+  philosophy-aligned alternative to a per-action "sorted N tabs" toast, which
+  the design philosophy rules out.
+
