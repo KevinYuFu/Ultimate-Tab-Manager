@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Folder, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, ExternalLink, Folder, LoaderCircle, Pencil, Sparkles, Trash2 } from 'lucide-react'
 import { useRef } from 'react'
 import type { Bin } from '../types'
 
@@ -17,6 +17,7 @@ type Props = {
   sorting: boolean
   onSelect: (id: string) => void
   onOpen: (id: string) => void
+  onOpenTabs: (id: string) => void
   onSort: (id: string) => void
   onStartEdit: (id: string) => void
   onCommitEdit: (id: string, name: string) => void
@@ -41,6 +42,7 @@ export default function BinRow({
   sorting,
   onSelect,
   onOpen,
+  onOpenTabs,
   onSort,
   onStartEdit,
   onCommitEdit,
@@ -124,6 +126,16 @@ export default function BinRow({
         <>
           <span className="bin-name">{bin.name}</span>
           <div className="tab-actions">
+            <button
+              className="tab-icon-btn"
+              title="Open all tabs"
+              onClick={(e) => {
+                e.stopPropagation()
+                onOpenTabs(bin.id)
+              }}
+            >
+              <ExternalLink size={13} strokeWidth={1.75} />
+            </button>
             {canSort && (
               <button
                 className="tab-icon-btn"
