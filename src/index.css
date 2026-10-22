@@ -244,9 +244,9 @@ body.full-view .app {
   z-index: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  padding: 6px 10px;
+  gap: 10px;
+  min-height: 46px;
+  padding: 5px 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -305,8 +305,8 @@ body.full-view .app {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 54px;
-  padding: 6px 10px;
+  min-height: 38px;
+  padding: 4px 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -341,10 +341,16 @@ body.full-view .app {
   color: var(--accent-2);
   flex-shrink: 0;
 }
+/* Folders are a step smaller than tab tiles. */
+.row-tile.bin-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+}
 .bin-name {
   flex: 1;
-  margin-left: 4px;
-  font-size: 14px;
+  margin-left: 2px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
@@ -374,23 +380,23 @@ body.full-view .app {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
 .row-tile.letter {
   border: none;
   color: #fff;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
 }
 
 .tab-favicon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 4px;
 }
 
@@ -409,7 +415,7 @@ body.full-view .app {
   min-width: 0;
 }
 .tab-name {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
@@ -417,7 +423,7 @@ body.full-view .app {
   text-overflow: ellipsis;
 }
 .row-meta {
-  font-size: 12.5px;
+  font-size: 11.5px;
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -427,7 +433,7 @@ body.full-view .app {
 /* Right side of a tab row: time ago. Hover swaps it for the action buttons. */
 .row-trailing {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }

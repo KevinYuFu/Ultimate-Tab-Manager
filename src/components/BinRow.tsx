@@ -96,7 +96,7 @@ export default function BinRow({
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>
       <span className="row-tile bin-icon">
-        <Folder size={16} strokeWidth={1.75} />
+        <Folder size={14} strokeWidth={1.75} />
       </span>
 
       {editing ? (
