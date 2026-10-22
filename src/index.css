@@ -55,7 +55,7 @@ body.full-view .app {
   border: 1px solid var(--border-md);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 24px 70px -20px var(--shadow);
 }
 
 /* ─── Shared components ─── */
@@ -64,12 +64,12 @@ body.full-view .app {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: 6px;
+  border-radius: 9px;
   background: none;
-  color: var(--text-3);
+  color: var(--text-2);
   cursor: pointer;
   transition: color 0.1s, background 0.1s;
   flex-shrink: 0;
@@ -85,11 +85,11 @@ body.full-view .app {
   padding: 0 4px;
   background: var(--surface-2);
   border: 1px solid var(--border-md);
-  border-radius: 3px;
+  border-radius: 4px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 10px;
   font-style: normal;
-  color: var(--accent);
+  color: var(--text-3);
   flex-shrink: 0;
   line-height: 1;
 }
@@ -102,87 +102,56 @@ body.full-view .app {
   height: 100%;
 }
 
-/* Header */
+/* Header: logo + name on the left, small icon buttons on the right */
 .nav-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 50px;
-  padding: 0 14px;
+  height: 58px;
+  padding: 0 14px 0 16px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
 }
 
 .nav-logo {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
 }
+.nav-logo b { font-weight: 700; }
 
 .nav-logo-icon {
-  width: 16px;
-  height: 16px;
+  width: 26px;
+  height: 26px;
 }
 
 .nav-header-right {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 2px;
 }
 
-.header-divider {
-  width: 1px;
-  height: 16px;
-  background: var(--border-md);
-  margin: 0 3px;
-}
-
-.header-action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 10px;
-  background: var(--surface);
-  border: 1px solid var(--border-md);
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
-}
-.header-action-btn:hover {
-  color: var(--text-1);
-  border-color: var(--border-hi);
-  background: var(--hover);
-}
-.header-action-btn:active { opacity: 0.75; transform: scale(0.98); }
-.header-action-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.header-action-btn:disabled:hover {
-  color: var(--text-2);
-  border-color: var(--border-md);
-  background: var(--surface);
-}
-
-/* Search bar (above the tree) */
+/* Search: a rounded field with the search hotkey on the right */
 .nav-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 40px;
-  padding: 0 14px;
+  gap: 10px;
+  height: 42px;
+  margin: 0 14px;
+  padding: 0 10px 0 14px;
   flex-shrink: 0;
-  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px var(--shadow);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.nav-search:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .nav-search-icon {
   color: var(--text-3);
@@ -196,18 +165,32 @@ body.full-view .app {
   outline: none;
   color: var(--text-1);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
 }
 .nav-search-input::placeholder { color: var(--text-3); }
+.search-kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-md);
+  border-radius: 6px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10.5px;
+  font-style: normal;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
 .nav-search-clear {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
   border: none;
-  border-radius: 5px;
+  border-radius: 6px;
   background: none;
   color: var(--text-3);
   cursor: pointer;
@@ -218,11 +201,28 @@ body.full-view .app {
   background: var(--surface-2);
 }
 
+/* Quiet label above the list: "Stashed · 47 tabs" */
+.list-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 18px 4px;
+  flex-shrink: 0;
+}
+.list-label-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.list-label-count {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
 /* Navigator tree area */
 .navigator-area {
   flex: 1;
   overflow-y: auto;
-  border-bottom: 1px solid var(--border);
 }
 /* highlighted while a tab is dragged over the empty area (drop to root) */
 .navigator-area.drop-root {
@@ -236,29 +236,44 @@ body.full-view .app {
 .tab-list {
   display: flex;
   flex-direction: column;
-  padding: 6px;
+  padding: 2px 8px 8px;
 }
 
-.tab-row {
+.tab-row,
+.bin-row {
   position: relative;
   z-index: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 10px;
   cursor: pointer;
   user-select: none;
 }
+.bin-row { gap: 8px; }
 /* Highlight layer, inset vertically so it leaves whitespace between rows while
    the rows themselves stay flush (keeping the indent guide line continuous). */
-.tab-row::before {
+.tab-row::before,
+.bin-row::before {
   content: '';
   position: absolute;
-  inset: 3px 0;
+  inset: 2px 0;
   z-index: -1;
-  border-radius: 7px;
+  border-radius: 12px;
   pointer-events: none;
   transition: background 0.08s;
+}
+.tab-row:hover::before,
+.bin-row:hover::before { background: var(--hover); }
+.tab-row.selected::before,
+.bin-row.selected::before { background: var(--accent-soft); }
+.tab-row.dragging,
+.bin-row.dragging { opacity: 0.35; }
+/* highlighted while a tab is dragged over it */
+.bin-row.drop-into::before {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* Vertical indent guide lines (one per nesting level), drawn in the gutter to
@@ -280,14 +295,6 @@ body.full-view .app {
     transparent 16px
   );
 }
-.tab-row:hover::before { background: var(--hover); }
-.tab-row.selected::before {
-  background: var(--accent-soft);
-  box-shadow: inset 2px 0 0 var(--accent);
-}
-.tab-row.dragging {
-  opacity: 0.35;
-}
 
 .drop-line {
   height: 2px;
@@ -297,36 +304,64 @@ body.full-view .app {
   box-shadow: 0 0 6px var(--accent);
 }
 
-/* Bin (folder) rows */
-.bin-row {
-  position: relative;
-  z-index: 0;
+/* The rounded square at the start of each row: favicon, letter, or folder */
+.row-tile {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-  user-select: none;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
-.bin-row::before {
-  content: '';
-  position: absolute;
-  inset: 3px 0;
-  z-index: -1;
-  border-radius: 7px;
-  pointer-events: none;
-  transition: background 0.08s;
+.row-tile.letter {
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
 }
-.bin-row.dragging { opacity: 0.35; }
-.bin-row:hover::before { background: var(--hover); }
-.bin-row.selected::before {
+.row-tile.bin {
+  border: none;
   background: var(--accent-soft);
-  box-shadow: inset 2px 0 0 var(--accent);
+  color: var(--accent);
 }
-/* highlighted while a tab is dragged over it */
-.bin-row.drop-into::before {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
+
+.tab-favicon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+/* Two-line text: title, then site (· bin while searching) */
+.row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tab-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-meta {
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bin-chevron {
@@ -335,19 +370,29 @@ body.full-view .app {
   color: var(--text-3);
   flex-shrink: 0;
 }
-.bin-icon {
-  color: var(--accent-2);
-  flex-shrink: 0;
-}
 .bin-name {
   flex: 1;
-  font-size: 13px;
-  font-weight: 500;
+  min-width: 0;
+  margin-left: 4px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Right side of a row: time ago (tabs) or tab count (bins). Hover swaps it for
+   the row's action buttons. */
+.row-trailing {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.tab-row:hover .row-trailing,
+.bin-row:hover .row-trailing,
+.bin-row.sorting .row-trailing { display: none; }
 
 /* Quick-select number badge (1–9) on the current scope's direct children. */
 .row-number {
@@ -366,26 +411,6 @@ body.full-view .app {
   line-height: 1;
 }
 
-.tab-favicon {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  flex-shrink: 0;
-}
-.tab-favicon-fallback {
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-
-.tab-name {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .tab-spinner {
   flex-shrink: 0;
   color: var(--accent);
@@ -395,36 +420,24 @@ body.full-view .app {
   to { transform: rotate(360deg); }
 }
 
-.tab-host {
-  font-size: 11px;
-  color: var(--text-3);
-  flex-shrink: 0;
-  white-space: nowrap;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .tab-actions {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.1s;
 }
 .tab-row:hover .tab-actions,
 .bin-row:hover .tab-actions,
-.bin-row.sorting .tab-actions { opacity: 1; }
+.bin-row.sorting .tab-actions { display: flex; }
 
 .tab-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: 5px;
+  border-radius: 7px;
   background: none;
   color: var(--text-3);
   cursor: pointer;
@@ -442,14 +455,14 @@ body.full-view .app {
 .tab-name-input {
   flex: 1;
   min-width: 0;
-  height: 24px;
-  padding: 0 8px;
-  background: var(--surface-2);
+  height: 30px;
+  padding: 0 10px;
+  background: var(--surface);
   border: 1px solid var(--accent);
-  border-radius: 5px;
+  border-radius: 8px;
   color: var(--text-1);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 14px;
   outline: none;
 }
 
@@ -475,62 +488,75 @@ body.full-view .app {
   opacity: 0.6;
 }
 
-/* Action bar */
+/* Bottom bar: Tidy + Stash, then the big orange Stash All */
 .action-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border);
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 9px;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px;
   background: var(--surface);
   border: 1px solid var(--border-md);
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px var(--shadow);
+  color: var(--text-1);
+  font-size: 14px;
+  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.1s, border-color 0.1s, background 0.1s;
+  transition: border-color 0.1s, background 0.1s, filter 0.1s;
 }
 .action-btn:hover {
-  color: var(--text-1);
   border-color: var(--border-hi);
   background: var(--hover);
 }
-.action-btn:active { opacity: 0.75; transform: scale(0.98); }
+.action-btn:active { transform: scale(0.98); }
 .action-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.5;
   cursor: default;
 }
-.action-btn:disabled:hover {
-  color: var(--text-2);
-  border-color: var(--border-md);
-  background: var(--surface);
+.action-btn-icon { color: var(--accent); }
+
+.action-btn.primary {
+  flex: 1;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 600;
+  box-shadow: 0 4px 14px -4px var(--accent);
+}
+.action-btn.primary:hover { filter: brightness(1.05); }
+/* the hotkey chip reads as part of the button on the orange fill */
+.action-btn.primary .btn-kbd {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: transparent;
+  color: var(--on-accent);
 }
 
-/* Status bar */
+/* Status bar: quiet keyboard hints */
 .status-bar {
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 30px;
-  padding: 0 16px;
+  height: 28px;
+  padding: 0 18px 4px;
   flex-shrink: 0;
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   font-size: 11px;
   color: var(--text-3);
 }
@@ -539,11 +565,10 @@ body.full-view .app {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 15px;
+  height: 16px;
   padding: 0 4px;
   background: var(--surface-2);
-  border: 1px solid var(--border-md);
-  border-radius: 3px;
+  border-radius: 4px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 9.5px;
   font-style: normal;
@@ -562,7 +587,7 @@ body.full-view .app {
 .prefs-header {
   display: flex;
   align-items: center;
-  height: 50px;
+  height: 58px;
   padding: 0 14px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
@@ -570,10 +595,8 @@ body.full-view .app {
 }
 
 .prefs-title {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 600;
   color: var(--text-1);
 }
 

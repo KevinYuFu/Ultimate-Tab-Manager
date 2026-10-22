@@ -1,4 +1,4 @@
-import { Layers, LoaderCircle, Search, Settings, Sparkles, X } from 'lucide-react'
+import { FolderPlus, Layers, LoaderCircle, Maximize2, Moon, Search, Settings, Sparkles, Sun, X } from 'lucide-react'
 import { Fragment, useEffect } from 'react'
 import type { Keybindings, Operation, Tab } from '../types'
 import { displayKey } from '../utils'
@@ -6,29 +6,26 @@ import { useNavigator } from '../hooks/useNavigator'
 import BinRow from './BinRow'
 import TabRow from './TabRow'
 
-const PRIMARY: { op: Operation; label: string }[] = [
-  { op: 'stash',        label: 'Stash' },
-  { op: 'stashAll',     label: 'Stash All' },
-]
-
-const SECONDARY: { op: Operation; label: string }[] = [
-  { op: 'newBin',       label: 'New Bin' },
-  { op: 'openFullView', label: 'Full View' },
-  { op: 'editName',     label: 'Edit Name' },
-  { op: 'delete',       label: 'Delete' },
-  { op: 'open',         label: 'Open' },
+// Small icon buttons in the header (label + hotkey show in the tooltip).
+const HEADER_OPS: { op: Operation; label: string; Icon: typeof FolderPlus }[] = [
+  { op: 'newBin',       label: 'New Bin',   Icon: FolderPlus },
+  { op: 'openFullView', label: 'Full View', Icon: Maximize2 },
 ]
 
 type Props = {
   keybindings: Keybindings
   stashAllOpensFullView: boolean
   onOpenPreferences: () => void
+  scheme: 'light' | 'dark'
+  onToggleScheme: () => void
 }
 
 export default function Navigator({
   keybindings,
   stashAllOpensFullView,
   onOpenPreferences,
+  scheme,
+  onToggleScheme,
 }: Props) {
   const nav = useNavigator({ keybindings, stashAllOpensFullView })
   const {
@@ -49,6 +46,11 @@ export default function Navigator({
       ?.scrollIntoView({ block: 'nearest' })
   }, [sel.selectedIds, sel.selectedBinId])
 
+  // Per-bin tab counts, and bin names for tabs while searching (no tree context).
+  const tabCount = new Map<string, number>()
+  for (const t of tabs) if (t.binId) tabCount.set(t.binId, (tabCount.get(t.binId) ?? 0) + 1)
+  const binName = new Map(bins.map(b => [b.id, b.name]))
+
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
   const renderTab = (tab: Tab, depth: number, firstInGroup = false, lastInGroup = false) => {
@@ -60,6 +62,7 @@ export default function Navigator({
         {dropBefore && <div className="drop-line" style={lineStyle} />}
         <TabRow
           tab={tab}
+          binName={searching && tab.binId ? binName.get(tab.binId) : undefined}
           depth={depth}
           firstInGroup={firstInGroup}
           lastInGroup={lastInGroup}
@@ -99,6 +102,7 @@ export default function Navigator({
               {before && <div className="drop-line" style={lineStyle} />}
               <BinRow
                 bin={bin}
+                tabCount={tabCount.get(bin.id) ?? 0}
                 depth={depth}
                 expanded={searching || expanded.has(bin.id)}
                 selected={sel.selectedBinId === bin.id}
@@ -135,6 +139,8 @@ export default function Navigator({
 
   const isEmpty = tabs.length === 0 && bins.length === 0
   const noMatches = searching && visibleItems.length === 0
+  const resultCount = visibleItems.filter(it => it.kind === 'tab').length
+  const tabWord = (n: number) => `${n} ${n === 1 ? 'tab' : 'tabs'}`
 
   return (
     <div className="nav-view" onDragOver={dnd.viewDragOver} onDrop={dnd.viewDrop}>
@@ -142,42 +148,56 @@ export default function Navigator({
       <header className="nav-header">
         <span className="nav-logo">
           <img src="icons/icon-32.png" alt="" className="nav-logo-icon" />
-          Tangerine Tab
+          <span>Tangerine <b>Tab</b></span>
         </span>
         <div className="nav-header-right">
-          {PRIMARY.map(({ op, label }) => (
+          {HEADER_OPS.map(({ op, label, Icon }) => (
             <button
               key={op}
-              className="header-action-btn"
+              className="icon-btn"
               onClick={handlers[op]}
-              disabled={!handlers[op]}
+              title={`${label} (${displayKey(keybindings[op])})`}
             >
-              <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
-              <span>{label}</span>
+              <Icon size={17} strokeWidth={1.75} />
             </button>
           ))}
-          <div className="header-divider" />
+          <button
+            className="icon-btn"
+            onClick={onToggleScheme}
+            title={scheme === 'light' ? 'Dark mode' : 'Light mode'}
+          >
+            {scheme === 'light' ? <Moon size={17} strokeWidth={1.75} /> : <Sun size={17} strokeWidth={1.75} />}
+          </button>
           <button className="icon-btn" onClick={onOpenPreferences} title="Preferences">
-            <Settings size={15} strokeWidth={1.75} />
+            <Settings size={17} strokeWidth={1.75} />
           </button>
         </div>
       </header>
 
       <div className="nav-search">
-        <Search className="nav-search-icon" size={14} strokeWidth={2} />
+        <Search className="nav-search-icon" size={16} strokeWidth={2} />
         <input
           ref={searchRef}
           className="nav-search-input"
-          placeholder="Search tabs and bins…"
+          placeholder={`Search ${tabs.length} saved ${tabs.length === 1 ? 'tab' : 'tabs'}`}
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={handleSearchKeyDown}
         />
-        {searching && (
+        {searching ? (
           <button className="nav-search-clear" onClick={clearSearch} title="Clear (Esc)">
             <X size={14} strokeWidth={2} />
           </button>
+        ) : (
+          <kbd className="search-kbd">{displayKey(keybindings.search)}</kbd>
         )}
+      </div>
+
+      <div className="list-label">
+        <span className="list-label-title">{searching ? 'Results' : 'Stashed'}</span>
+        <span className="list-label-count">
+          {searching ? tabWord(resultCount) : tabWord(tabs.length)}
+        </span>
       </div>
 
       <div
@@ -203,42 +223,39 @@ export default function Navigator({
       </div>
 
       <div className="action-bar">
-        {SECONDARY.map(({ op, label }) => (
-          <button
-            key={op}
-            className="action-btn"
-            onClick={handlers[op]}
-            disabled={!handlers[op]}
-          >
-            <kbd className="btn-kbd">{displayKey(keybindings[op])}</kbd>
-            <span>{label}</span>
-          </button>
-        ))}
-        {/* Tidy Root: broom icon + short "Tidy" label; fuller name in aria-label
-            / title for screen readers and the tooltip. */}
+        {/* Tidy Root: fuller name in aria-label / title for screen readers. */}
         {premium && (
           <button
             className="action-btn"
             onClick={nav.handleTidyRoot}
             disabled={tidyingRoot}
             aria-label="Tidy Root"
-            title="Tidy Root"
+            title={`Tidy Root (${displayKey(keybindings.tidyRoot)})`}
           >
             {tidyingRoot ? (
-              <LoaderCircle className="tab-spinner" size={15} strokeWidth={2} />
+              <LoaderCircle className="tab-spinner" size={16} strokeWidth={2} />
             ) : (
-              <Sparkles size={15} strokeWidth={1.75} />
+              <Sparkles className="action-btn-icon" size={16} strokeWidth={1.75} />
             )}
             <span>Tidy</span>
           </button>
         )}
+        <button className="action-btn" onClick={handlers.stash} title="Stash this tab">
+          <span>Stash</span>
+          <kbd className="btn-kbd">{displayKey(keybindings.stash)}</kbd>
+        </button>
+        <button className="action-btn primary" onClick={handlers.stashAll} title="Stash and close all tabs">
+          <span>Stash All</span>
+          <kbd className="btn-kbd">{displayKey(keybindings.stashAll)}</kbd>
+        </button>
       </div>
 
       <div className="status-bar">
         <span className="status-item"><kbd className="status-kbd">1–9</kbd>select</span>
         <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.open)}</kbd>open</span>
-        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.goBack)}</kbd>back</span>
+        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.editName)}</kbd>rename</span>
         <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.delete)}</kbd>delete</span>
+        <span className="status-item"><kbd className="status-kbd">{displayKey(keybindings.goBack)}</kbd>back</span>
       </div>
 
     </div>
