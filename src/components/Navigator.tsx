@@ -633,7 +633,10 @@ export default function Navigator({
     <div className="nav-view" onDragOver={dnd.viewDragOver} onDrop={dnd.viewDrop}>
 
       <header className="nav-header">
-        <span className="nav-logo">UTM</span>
+        <span className="nav-logo">
+          <img src="icons/icon-32.png" alt="" className="nav-logo-icon" />
+          Tangerine Tab
+        </span>
         <div className="nav-header-right">
           {PRIMARY.map(({ op, label }) => (
             <button

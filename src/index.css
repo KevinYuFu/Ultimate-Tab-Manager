@@ -119,6 +119,14 @@ body.full-view .app {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.nav-logo-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .nav-header-right {
