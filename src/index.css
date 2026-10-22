@@ -305,7 +305,8 @@ body.full-view .app {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  min-height: 54px;
+  padding: 6px 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -342,7 +343,8 @@ body.full-view .app {
 }
 .bin-name {
   flex: 1;
-  font-size: 13px;
+  margin-left: 4px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
@@ -367,7 +369,7 @@ body.full-view .app {
   line-height: 1;
 }
 
-/* The rounded square at the start of a tab row: favicon or letter */
+/* The rounded square at the start of a row: favicon, letter, or folder */
 .row-tile {
   display: flex;
   align-items: center;
