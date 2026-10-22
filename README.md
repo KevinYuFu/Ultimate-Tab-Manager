@@ -1,4 +1,6 @@
-# Ultimate Tab Manager
+<img src="assets/logo.svg" width="96" alt="Tangerine Tab logo" />
+
+# Tangerine Tab
 
 A keyboard-driven Chrome Extension for tab hoarders. Stash, organize, and reopen tabs instantly — without losing anything.
 
