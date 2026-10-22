@@ -83,9 +83,9 @@ when a call is unclear, these break the tie.
   cover for something that might misplace a tab — that hides a quality problem
   instead of fixing it. If results are wrong often enough that reverting feels
   necessary, that's a **bug to fix at the source**. Nudging one misplaced tab is
-  a normal manual move; bulk-reverting an automated action is not a feature we
-  build. (This is only about automated actions — the manual undo/redo of the
-  user's own edits stays.)
+  a normal manual move; a separate "revert" button or save state for an
+  automated action is not a feature we build. Ctrl+Z still covers it: an AI
+  sort is one step in the normal undo history, like any other edit.
 
 - **Ambient info, not interruptions.** Tell the user what happened without making
   them stop, look, or dismiss. Prefer a quiet, always-there status line over
