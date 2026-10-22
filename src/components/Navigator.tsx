@@ -26,7 +26,9 @@ import {
   recordDeleteTabs,
   recordRenameBin,
   recordRenameTab,
+  recordSort,
   redo,
+  sortSnapshot,
   undo,
 } from '../services/history'
 import { useDragAndDrop } from '../hooks/useDragAndDrop'
@@ -367,7 +369,9 @@ export default function Navigator({
   const handleSortBin = async (id: string) => {
     setSortingBinId(id)
     try {
+      const before = await sortSnapshot(id)
       await sortBin(id)
+      await recordSort(before)
       await refresh()
     } finally {
       setSortingBinId(null)
@@ -378,7 +382,9 @@ export default function Navigator({
   const handleTidyRoot = async () => {
     setTidyingRoot(true)
     try {
+      const before = await sortSnapshot(null)
       await sortRootTabs()
+      await recordSort(before)
       await refresh()
     } finally {
       setTidyingRoot(false)

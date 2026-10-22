@@ -9,7 +9,7 @@
 // `record*` helper, which captures the "before" state and stores the command.
 // The base operations stay pure — they don't know history exists.
 
-import type { BinSpot, Command, TabAt } from '../types'
+import type { Bin, BinSpot, Command, TabAt } from '../types'
 import {
   getBins,
   getHistory,
@@ -111,6 +111,12 @@ async function apply(command: Command, direction: 'undo' | 'redo'): Promise<void
       await saveBins(rest)
       break
     }
+    case 'batch': {
+      // Redo runs the steps in order; undo runs them in reverse.
+      const steps = direction === 'redo' ? command.commands : [...command.commands].reverse()
+      for (const step of steps) await apply(step, direction)
+      break
+    }
   }
 }
 
@@ -205,4 +211,35 @@ export async function recordBinMove(id: string, from: BinSpot): Promise<void> {
   const to = await binSpot(id)
   if (to.index === -1 || (to.index === from.index && to.parentId === from.parentId)) return
   await record({ type: 'moveBin', id, from, to })
+}
+
+// An AI sort moves tabs out of a bin (or root) and may delete the emptied bin.
+// Capture sortSnapshot before the sort, then call recordSort after: it records
+// the moves (and the bin delete, if any) as one batch, so one undo reverts it.
+export type SortSnapshot = { tabs: TabAt[]; bin: { bin: Bin; index: number } | null }
+
+export async function sortSnapshot(binId: string | null): Promise<SortSnapshot> {
+  const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
+  const index = bins.findIndex(b => b.id === binId)
+  return {
+    tabs: tabs.map((tab, index) => ({ tab, index })).filter(({ tab }) => tab.binId === binId),
+    bin: index === -1 ? null : { bin: bins[index], index },
+  }
+}
+
+export async function recordSort(before: SortSnapshot): Promise<void> {
+  const [tabs, bins] = await Promise.all([getStashedTabs(), getBins()])
+  const now = new Map(tabs.map((tab, index) => [tab.id, { tab, index }]))
+  // Only the tabs the sort actually moved; leftovers aren't recorded.
+  const from = before.tabs.filter(({ tab }) => {
+    const after = now.get(tab.id)
+    return after !== undefined && after.tab.binId !== tab.binId
+  })
+  const steps: Command[] = []
+  if (from.length) steps.push({ type: 'moveTabs', from, to: from.map(({ tab }) => now.get(tab.id)!) })
+  if (before.bin && !bins.some(b => b.id === before.bin!.bin.id)) {
+    // The bin was empty when the sort deleted it, so it had no children.
+    steps.push({ type: 'deleteBin', ...before.bin, childTabIds: [], childBinIds: [] })
+  }
+  if (steps.length) await record({ type: 'batch', commands: steps })
 }

@@ -39,6 +39,8 @@ export type Command =
   | { type: 'renameBin'; id: string; from: string; to: string }
   | { type: 'moveBin'; id: string; from: BinSpot; to: BinSpot }
   | { type: 'deleteBin'; bin: Bin; index: number; childTabIds: string[]; childBinIds: string[] }
+  // Several commands as one undo step (e.g. an AI sort: tab moves + a bin delete).
+  | { type: 'batch'; commands: Command[] }
 
 // The whole undo/redo history: a flat list plus a cursor. commands[0..cursor-1]
 // are done (undoable); commands[cursor..] are undone (redoable).
