@@ -1,15 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Tangerine Tab logo. Source for the PNG icons in public/icons (npm run icons). -->
-  <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFA53D"/>
-      <stop offset="1" stop-color="#FF6A00"/>
-    </linearGradient>
-  </defs>
-  <!-- rounded app tile -->
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#tile)"/>
-  <!-- tangerine (a little wider than tall) -->
-  <ellipse cx="64" cy="72" rx="38" ry="34" fill="#FFFFFF"/>
-  <!-- leaf -->
-  <path d="M64 40 C64 26 76 18 92 20 C90 34 78 40 64 40Z" fill="#34C759"/>
+  <!-- Tangerine Tab logo: flat segments, one slice missing, stem + leaf.
+       Source for public/icons (npm run icons); 16px uses logo-small.svg. -->
+  <path d="M64 30 L64 18" stroke="#2E7D32" stroke-width="7" stroke-linecap="round"/>
+  <path d="M66 20 C70 8 84 4 98 7 C95 20 82 26 66 20Z" fill="#34C759"/>
+  <path d="M67.50 63.55 L67.50 28.14 A44 44 0 0 1 92.54 38.51 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M72.45 68.50 L97.49 43.46 A44 44 0 0 1 107.86 68.50 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M72.45 75.50 L107.86 75.50 A44 44 0 0 1 97.49 100.54 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M60.50 80.45 L60.50 115.86 A44 44 0 0 1 35.46 105.49 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M55.55 75.50 L30.51 100.54 A44 44 0 0 1 20.14 75.50 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M55.55 68.50 L20.14 68.50 A44 44 0 0 1 30.51 43.46 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M60.50 63.55 L35.46 38.51 A44 44 0 0 1 60.50 28.14 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
 </svg>
