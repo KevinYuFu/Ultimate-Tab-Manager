@@ -55,7 +55,7 @@ body.full-view .app {
   border: 1px solid var(--border-md);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 24px 70px -20px var(--shadow);
+  box-shadow: 0 24px 70px -20px rgba(0, 0, 0, 0.6);
 }
 
 /* ─── Shared components ─── */
@@ -64,12 +64,12 @@ body.full-view .app {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: none;
-  border-radius: 9px;
+  border-radius: 6px;
   background: none;
-  color: var(--text-2);
+  color: var(--text-3);
   cursor: pointer;
   transition: color 0.1s, background 0.1s;
   flex-shrink: 0;
@@ -85,11 +85,11 @@ body.full-view .app {
   padding: 0 4px;
   background: var(--surface-2);
   border: 1px solid var(--border-md);
-  border-radius: 4px;
+  border-radius: 3px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 10px;
   font-style: normal;
-  color: var(--text-3);
+  color: var(--accent);
   flex-shrink: 0;
   line-height: 1;
 }
@@ -102,56 +102,87 @@ body.full-view .app {
   height: 100%;
 }
 
-/* Header: logo + name on the left, small icon buttons on the right */
+/* Header */
 .nav-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 58px;
-  padding: 0 14px 0 16px;
+  height: 50px;
+  padding: 0 14px;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
 }
 
 .nav-logo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 16px;
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  color: var(--text-1);
+  gap: 7px;
 }
-.nav-logo b { font-weight: 700; }
 
 .nav-logo-icon {
-  width: 26px;
-  height: 26px;
+  width: 16px;
+  height: 16px;
 }
 
 .nav-header-right {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 5px;
 }
 
-/* Search: a rounded field with the search hotkey on the right */
+.header-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--border-md);
+  margin: 0 3px;
+}
+
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 28px;
+  padding: 0 10px;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
+}
+.header-action-btn:hover {
+  color: var(--text-1);
+  border-color: var(--border-hi);
+  background: var(--hover);
+}
+.header-action-btn:active { opacity: 0.75; transform: scale(0.98); }
+.header-action-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.header-action-btn:disabled:hover {
+  color: var(--text-2);
+  border-color: var(--border-md);
+  background: var(--surface);
+}
+
+/* Search bar (above the tree) */
 .nav-search {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 42px;
-  margin: 0 14px;
-  padding: 0 10px 0 14px;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
   flex-shrink: 0;
-  background: var(--surface);
-  border: 1px solid var(--border-md);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--shadow);
-  transition: border-color 0.12s, box-shadow 0.12s;
-}
-.nav-search:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-bottom: 1px solid var(--border);
 }
 .nav-search-icon {
   color: var(--text-3);
@@ -165,32 +196,18 @@ body.full-view .app {
   outline: none;
   color: var(--text-1);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
 }
 .nav-search-input::placeholder { color: var(--text-3); }
-.search-kbd {
-  display: inline-flex;
-  align-items: center;
-  height: 22px;
-  padding: 0 7px;
-  background: var(--surface-2);
-  border: 1px solid var(--border-md);
-  border-radius: 6px;
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 10.5px;
-  font-style: normal;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
 .nav-search-clear {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   background: none;
   color: var(--text-3);
   cursor: pointer;
@@ -201,28 +218,11 @@ body.full-view .app {
   background: var(--surface-2);
 }
 
-/* Quiet label above the list: "Stashed · 47 tabs" */
-.list-label {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 16px 18px 4px;
-  flex-shrink: 0;
-}
-.list-label-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-1);
-}
-.list-label-count {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
 /* Navigator tree area */
 .navigator-area {
   flex: 1;
   overflow-y: auto;
+  border-bottom: 1px solid var(--border);
 }
 /* highlighted while a tab is dragged over the empty area (drop to root) */
 .navigator-area.drop-root {
@@ -236,44 +236,30 @@ body.full-view .app {
 .tab-list {
   display: flex;
   flex-direction: column;
-  padding: 2px 8px 8px;
+  padding: 6px;
 }
 
-.tab-row,
-.bin-row {
+.tab-row {
   position: relative;
   z-index: 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 56px;
+  min-height: 54px;
   padding: 6px 10px;
   cursor: pointer;
   user-select: none;
 }
-.bin-row { gap: 8px; }
 /* Highlight layer, inset vertically so it leaves whitespace between rows while
    the rows themselves stay flush (keeping the indent guide line continuous). */
-.tab-row::before,
-.bin-row::before {
+.tab-row::before {
   content: '';
   position: absolute;
-  inset: 2px 0;
+  inset: 3px 0;
   z-index: -1;
-  border-radius: 12px;
+  border-radius: 7px;
   pointer-events: none;
   transition: background 0.08s;
-}
-.tab-row:hover::before,
-.bin-row:hover::before { background: var(--hover); }
-.tab-row.selected::before,
-.bin-row.selected::before { background: var(--accent-soft); }
-.tab-row.dragging,
-.bin-row.dragging { opacity: 0.35; }
-/* highlighted while a tab is dragged over it */
-.bin-row.drop-into::before {
-  background: var(--accent-soft);
-  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* Vertical indent guide lines (one per nesting level), drawn in the gutter to
@@ -295,6 +281,14 @@ body.full-view .app {
     transparent 16px
   );
 }
+.tab-row:hover::before { background: var(--hover); }
+.tab-row.selected::before {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.tab-row.dragging {
+  opacity: 0.35;
+}
 
 .drop-line {
   height: 2px;
@@ -304,7 +298,76 @@ body.full-view .app {
   box-shadow: 0 0 6px var(--accent);
 }
 
-/* The rounded square at the start of each row: favicon, letter, or folder */
+/* Bin (folder) rows */
+.bin-row {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.bin-row::before {
+  content: '';
+  position: absolute;
+  inset: 3px 0;
+  z-index: -1;
+  border-radius: 7px;
+  pointer-events: none;
+  transition: background 0.08s;
+}
+.bin-row.dragging { opacity: 0.35; }
+.bin-row:hover::before { background: var(--hover); }
+.bin-row.selected::before {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* highlighted while a tab is dragged over it */
+.bin-row.drop-into::before {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.bin-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.bin-icon {
+  color: var(--accent-2);
+  flex-shrink: 0;
+}
+.bin-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Quick-select number badge (1–9) on the current scope's direct children. */
+.row-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* The rounded square at the start of a tab row: favicon or letter */
 .row-tile {
   display: flex;
   align-items: center;
@@ -321,11 +384,6 @@ body.full-view .app {
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-}
-.row-tile.bin {
-  border: none;
-  background: var(--accent-soft);
-  color: var(--accent);
 }
 
 .tab-favicon {
@@ -364,52 +422,14 @@ body.full-view .app {
   text-overflow: ellipsis;
 }
 
-.bin-chevron {
-  display: flex;
-  align-items: center;
-  color: var(--text-3);
-  flex-shrink: 0;
-}
-.bin-name {
-  flex: 1;
-  min-width: 0;
-  margin-left: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Right side of a row: time ago (tabs) or tab count (bins). Hover swaps it for
-   the row's action buttons. */
+/* Right side of a tab row: time ago. Hover swaps it for the action buttons. */
 .row-trailing {
   flex-shrink: 0;
   font-size: 12px;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
 }
-.tab-row:hover .row-trailing,
-.bin-row:hover .row-trailing,
-.bin-row.sorting .row-trailing { display: none; }
-
-/* Quick-select number badge (1–9) on the current scope's direct children. */
-.row-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  border-radius: 4px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-}
+.tab-row:hover .row-trailing { display: none; }
 
 .tab-spinner {
   flex-shrink: 0;
@@ -421,23 +441,29 @@ body.full-view .app {
 }
 
 .tab-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 2px;
   flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.1s;
 }
 .tab-row:hover .tab-actions,
 .bin-row:hover .tab-actions,
-.bin-row.sorting .tab-actions { display: flex; }
+.bin-row.sorting .tab-actions { opacity: 1; }
+/* Tab rows swap the actions in place of the time (see .row-trailing), so the
+   hidden actions mustn't take up space. */
+.tab-row .tab-actions { display: none; }
+.tab-row:hover .tab-actions { display: flex; }
 
 .tab-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border: none;
-  border-radius: 7px;
+  border-radius: 5px;
   background: none;
   color: var(--text-3);
   cursor: pointer;
@@ -455,14 +481,14 @@ body.full-view .app {
 .tab-name-input {
   flex: 1;
   min-width: 0;
-  height: 30px;
-  padding: 0 10px;
-  background: var(--surface);
+  height: 24px;
+  padding: 0 8px;
+  background: var(--surface-2);
   border: 1px solid var(--accent);
-  border-radius: 8px;
+  border-radius: 5px;
   color: var(--text-1);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 13px;
   outline: none;
 }
 
@@ -488,75 +514,62 @@ body.full-view .app {
   opacity: 0.6;
 }
 
-/* Bottom bar: Tidy + Stash, then the big orange Stash All */
+/* Action bar */
 .action-bar {
   display: flex;
-  gap: 8px;
-  padding: 12px 14px 10px;
-  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
 .action-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 44px;
-  padding: 0 18px;
+  gap: 5px;
+  height: 26px;
+  padding: 0 9px;
   background: var(--surface);
   border: 1px solid var(--border-md);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px var(--shadow);
-  color: var(--text-1);
-  font-size: 14px;
-  font-weight: 500;
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 12px;
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: border-color 0.1s, background 0.1s, filter 0.1s;
+  transition: color 0.1s, border-color 0.1s, background 0.1s;
 }
 .action-btn:hover {
+  color: var(--text-1);
   border-color: var(--border-hi);
   background: var(--hover);
 }
-.action-btn:active { transform: scale(0.98); }
+.action-btn:active { opacity: 0.75; transform: scale(0.98); }
 .action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: default;
 }
-.action-btn-icon { color: var(--accent); }
-
-.action-btn.primary {
-  flex: 1;
-  border: none;
-  background: var(--accent);
-  color: var(--on-accent);
-  font-weight: 600;
-  box-shadow: 0 4px 14px -4px var(--accent);
-}
-.action-btn.primary:hover { filter: brightness(1.05); }
-/* the hotkey chip reads as part of the button on the orange fill */
-.action-btn.primary .btn-kbd {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: transparent;
-  color: var(--on-accent);
+.action-btn:disabled:hover {
+  color: var(--text-2);
+  border-color: var(--border-md);
+  background: var(--surface);
 }
 
-/* Status bar: quiet keyboard hints */
+/* Status bar */
 .status-bar {
   display: flex;
   align-items: center;
   gap: 14px;
-  height: 28px;
-  padding: 0 18px 4px;
+  height: 30px;
+  padding: 0 16px;
   flex-shrink: 0;
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   font-size: 11px;
   color: var(--text-3);
 }
@@ -565,10 +578,11 @@ body.full-view .app {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 16px;
+  height: 15px;
   padding: 0 4px;
   background: var(--surface-2);
-  border-radius: 4px;
+  border: 1px solid var(--border-md);
+  border-radius: 3px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 9.5px;
   font-style: normal;
@@ -587,7 +601,7 @@ body.full-view .app {
 .prefs-header {
   display: flex;
   align-items: center;
-  height: 58px;
+  height: 50px;
   padding: 0 14px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border);
@@ -595,8 +609,10 @@ body.full-view .app {
 }
 
 .prefs-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--text-1);
 }
 

@@ -91,7 +91,7 @@ export default function Preferences({
                 onClick={() => onThemeChange(theme)}
                 style={{ background: theme.bg, borderColor: currentThemeId === theme.id ? theme.accent : theme.borderMd }}
               >
-                <div className="theme-card-preview" style={{ background: theme.surface2 }}>
+                <div className="theme-card-preview">
                   <span className="theme-card-bar" style={{ background: theme.accent, width: '70%' }} />
                   <span className="theme-card-bar" style={{ background: theme.text2, width: '90%' }} />
                   <span className="theme-card-bar" style={{ background: theme.surface2, width: '50%' }} />

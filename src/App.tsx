@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Navigator from './components/Navigator'
 import Preferences from './components/Preferences'
-import { THEMES, DEFAULT_THEME, toggledScheme, type Theme } from './themes'
+import { THEMES, DEFAULT_THEME, type Theme } from './themes'
 import {
   DEFAULT_AI_SORT_ON_STASH,
   DEFAULT_KEYBINDINGS,
@@ -75,14 +75,11 @@ export default function App() {
       '--accent':      theme.accent,
       '--accent-soft': theme.accentSoft,
       '--accent-2':    theme.accent2,
-      '--on-accent':   theme.onAccent,
-      '--shadow':      theme.scheme === 'light' ? 'rgba(60,40,20,0.10)' : 'rgba(0,0,0,0.45)',
     }
     const root = document.documentElement
     for (const [key, value] of Object.entries(vars)) {
       root.style.setProperty(key, value)
     }
-    root.style.colorScheme = theme.scheme
   }, [theme])
 
   return (
@@ -92,8 +89,6 @@ export default function App() {
           keybindings={keybindings}
           stashAllOpensFullView={stashAllOpensFullView}
           onOpenPreferences={() => setView('preferences')}
-          scheme={theme.scheme}
-          onToggleScheme={() => applyTheme(toggledScheme(theme))}
         />
       ) : (
         <Preferences

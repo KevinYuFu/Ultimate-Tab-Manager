@@ -4,8 +4,6 @@ import type { Bin } from '../types'
 
 type Props = {
   bin: Bin
-  // How many tabs sit directly in this bin.
-  tabCount: number
   depth: number
   expanded: boolean
   selected: boolean
@@ -33,7 +31,6 @@ type Props = {
 
 export default function BinRow({
   bin,
-  tabCount,
   depth,
   expanded,
   selected,
@@ -98,9 +95,7 @@ export default function BinRow({
       <span className="bin-chevron">
         {expanded ? <ChevronDown size={14} strokeWidth={2} /> : <ChevronRight size={14} strokeWidth={2} />}
       </span>
-      <span className="row-tile bin">
-        <Folder size={16} strokeWidth={1.75} />
-      </span>
+      <Folder className="bin-icon" size={15} strokeWidth={1.75} />
 
       {editing ? (
         <input
@@ -130,9 +125,6 @@ export default function BinRow({
       ) : (
         <>
           <span className="bin-name">{bin.name}</span>
-          <span className="row-trailing">
-            {tabCount} {tabCount === 1 ? 'tab' : 'tabs'}
-          </span>
           <div className="tab-actions">
             <button
               className="tab-icon-btn"

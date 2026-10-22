@@ -1,8 +1,6 @@
 export type Theme = {
   id: string
   name: string
-  // Light or dark. Drives the moon toggle, native form controls, and shadows.
-  scheme: 'light' | 'dark'
   bg: string
   surface: string
   surface2: string
@@ -16,53 +14,12 @@ export type Theme = {
   accent: string
   accentSoft: string
   accent2: string
-  // Text/icon color on a solid accent fill (the primary button).
-  onAccent: string
 }
 
 export const THEMES: Theme[] = [
   {
-    id: 'tangerine-light',
-    name: 'Tangerine Light',
-    scheme: 'light',
-    bg: '#f7f5f2',
-    surface: '#ffffff',
-    surface2: '#f0ede9',
-    hover: 'rgba(0,0,0,0.04)',
-    border: 'rgba(0,0,0,0.06)',
-    borderMd: 'rgba(0,0,0,0.10)',
-    borderHi: 'rgba(0,0,0,0.18)',
-    text1: '#1c1b1a',
-    text2: '#4a4744',
-    text3: '#9a958f',
-    accent: '#ee8a3c',
-    accentSoft: 'rgba(238,138,60,0.12)',
-    accent2: '#ee8a3c',
-    onAccent: '#ffffff',
-  },
-  {
-    id: 'tangerine-dark',
-    name: 'Tangerine Dark',
-    scheme: 'dark',
-    bg: '#151413',
-    surface: '#1e1d1c',
-    surface2: '#282725',
-    hover: 'rgba(255,255,255,0.05)',
-    border: 'rgba(255,255,255,0.07)',
-    borderMd: 'rgba(255,255,255,0.12)',
-    borderHi: 'rgba(255,255,255,0.22)',
-    text1: '#f3f1ee',
-    text2: '#c9c5c0',
-    text3: '#7d7873',
-    accent: '#f0913f',
-    accentSoft: 'rgba(240,145,63,0.14)',
-    accent2: '#f0913f',
-    onAccent: '#1a1208',
-  },
-  {
     id: 'tokyo-night',
     name: 'Tokyo Night',
-    scheme: 'dark',
     bg: '#1a1b2e',
     surface: '#1f2335',
     surface2: '#24283b',
@@ -76,12 +33,10 @@ export const THEMES: Theme[] = [
     accent: '#7aa2f7',
     accentSoft: 'rgba(122,162,247,0.12)',
     accent2: '#bb9af7',
-    onAccent: '#1a1b2e',
   },
   {
     id: 'gruvbox',
     name: 'Gruvbox Dark',
-    scheme: 'dark',
     bg: '#1d2021',
     surface: '#282828',
     surface2: '#32302f',
@@ -95,12 +50,10 @@ export const THEMES: Theme[] = [
     accent: '#d79921',
     accentSoft: 'rgba(215,153,33,0.12)',
     accent2: '#689d6a',
-    onAccent: '#1d2021',
   },
   {
     id: 'dracula',
     name: 'Dracula',
-    scheme: 'dark',
     bg: '#191a21',
     surface: '#282a36',
     surface2: '#2d303f',
@@ -114,12 +67,10 @@ export const THEMES: Theme[] = [
     accent: '#bd93f9',
     accentSoft: 'rgba(189,147,249,0.12)',
     accent2: '#ff79c6',
-    onAccent: '#191a21',
   },
   {
     id: 'nord',
     name: 'Nord',
-    scheme: 'dark',
     bg: '#242933',
     surface: '#2e3440',
     surface2: '#3b4252',
@@ -133,12 +84,10 @@ export const THEMES: Theme[] = [
     accent: '#88c0d0',
     accentSoft: 'rgba(136,192,208,0.12)',
     accent2: '#81a1c1',
-    onAccent: '#242933',
   },
   {
     id: 'catppuccin',
     name: 'Catppuccin',
-    scheme: 'dark',
     bg: '#181825',
     surface: '#1e1e2e',
     surface2: '#313244',
@@ -152,12 +101,10 @@ export const THEMES: Theme[] = [
     accent: '#cba6f7',
     accentSoft: 'rgba(203,166,247,0.12)',
     accent2: '#89b4fa',
-    onAccent: '#181825',
   },
   {
     id: 'one-dark',
     name: 'One Dark',
-    scheme: 'dark',
     bg: '#21252b',
     surface: '#282c34',
     surface2: '#2c313a',
@@ -171,12 +118,10 @@ export const THEMES: Theme[] = [
     accent: '#61afef',
     accentSoft: 'rgba(97,175,239,0.12)',
     accent2: '#c678dd',
-    onAccent: '#21252b',
   },
   {
     id: 'monokai',
     name: 'Monokai',
-    scheme: 'dark',
     bg: '#1e1f1c',
     surface: '#272822',
     surface2: '#2f302a',
@@ -190,12 +135,10 @@ export const THEMES: Theme[] = [
     accent: '#a6e22e',
     accentSoft: 'rgba(166,226,46,0.12)',
     accent2: '#fd971f',
-    onAccent: '#1e1f1c',
   },
   {
     id: 'rose-pine',
     name: 'Rosé Pine',
-    scheme: 'dark',
     bg: '#191724',
     surface: '#1f1d2e',
     surface2: '#26233a',
@@ -209,15 +152,7 @@ export const THEMES: Theme[] = [
     accent: '#ebbcba',
     accentSoft: 'rgba(235,188,186,0.12)',
     accent2: '#c4a7e7',
-    onAccent: '#191724',
   },
 ]
 
-export const DEFAULT_THEME = THEMES[0] // Tangerine Light
-
-// The moon button: flip between the two Tangerine themes. From any other theme
-// (all dark), it goes to Tangerine Light.
-export function toggledScheme(theme: Theme): Theme {
-  const id = theme.id === 'tangerine-light' ? 'tangerine-dark' : 'tangerine-light'
-  return THEMES.find(t => t.id === id)!
-}
+export const DEFAULT_THEME = THEMES[0]
