@@ -87,11 +87,16 @@ export const DEFAULT_STASH_ALL_OPENS_FULL_VIEW = true
 // it's opt-in and sends tab titles/URLs to the AI provider.
 export const DEFAULT_AI_SORT_ON_STASH = false
 
+// Row size, from 0 (compact: tabs and bins the same height) to 1 (roomy: tab
+// rows taller than bin rows). The CSS scales row sizes from this value.
+export const DEFAULT_ROW_SCALE = 1
+
 export type Settings = {
   themeId: string
   keybindings: Keybindings
   stashAllOpensFullView: boolean
   aiSortOnStash: boolean
+  rowScale: number
   tabs: Tab[]
   bins: Bin[]
 }

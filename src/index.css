@@ -244,9 +244,9 @@ body.full-view .app {
   z-index: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 46px;
-  padding: 5px 10px;
+  gap: calc(8px + 2px * var(--row-scale, 1));
+  min-height: calc(41px + 5px * var(--row-scale, 1));
+  padding: calc(4px + 1px * var(--row-scale, 1)) 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -305,7 +305,8 @@ body.full-view .app {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
+  /* Same height as a tab row at the smallest size; a step shorter at the largest. */
+  min-height: calc(41px - 3px * var(--row-scale, 1));
   padding: 4px 10px;
   cursor: pointer;
   user-select: none;
@@ -343,9 +344,9 @@ body.full-view .app {
 }
 /* Folders are a step smaller than tab tiles. */
 .row-tile.bin-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
+  width: calc(22px + 2px * var(--row-scale, 1));
+  height: calc(22px + 2px * var(--row-scale, 1));
+  border-radius: calc(6px + 1px * var(--row-scale, 1));
 }
 .bin-name {
   flex: 1;
@@ -380,23 +381,23 @@ body.full-view .app {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: calc(22px + 6px * var(--row-scale, 1));
+  height: calc(22px + 6px * var(--row-scale, 1));
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: calc(6px + 2px * var(--row-scale, 1));
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
 .row-tile.letter {
   border: none;
   color: #fff;
-  font-size: 12px;
+  font-size: calc(11px + 1px * var(--row-scale, 1));
   font-weight: 600;
 }
 
 .tab-favicon {
-  width: 16px;
-  height: 16px;
+  width: calc(14px + 2px * var(--row-scale, 1));
+  height: calc(14px + 2px * var(--row-scale, 1));
   border-radius: 4px;
 }
 
@@ -404,6 +405,7 @@ body.full-view .app {
 .row-text {
   flex: 1;
   min-width: 0;
+  line-height: 1.3;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -423,7 +425,7 @@ body.full-view .app {
   text-overflow: ellipsis;
 }
 .row-meta {
-  font-size: 11.5px;
+  font-size: calc(11px + 0.5px * var(--row-scale, 1));
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -670,6 +672,22 @@ body.full-view .app {
   margin-bottom: 10px;
 }
 .prefs-section-label-row .prefs-section-label { margin-bottom: 0; }
+
+/* Row size slider: Compact ←→ Roomy */
+.size-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.size-slider input {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.size-slider-end {
+  font-size: 11px;
+  color: var(--text-3);
+}
 
 /* Setting row with a toggle switch */
 .setting-row {

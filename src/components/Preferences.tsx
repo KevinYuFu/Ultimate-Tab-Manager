@@ -29,6 +29,8 @@ type Props = {
   onStashAllOpensFullViewChange: (value: boolean) => void
   aiSortOnStash: boolean
   onAiSortOnStashChange: (value: boolean) => void
+  rowScale: number
+  onRowScaleChange: (value: number) => void
   onBack: () => void
 }
 
@@ -41,6 +43,8 @@ export default function Preferences({
   onStashAllOpensFullViewChange,
   aiSortOnStash,
   onAiSortOnStashChange,
+  rowScale,
+  onRowScaleChange,
   onBack,
 }: Props) {
   const premium = hasPremium()
@@ -106,6 +110,23 @@ export default function Preferences({
                 </div>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="prefs-section">
+          <div className="prefs-section-label">Row size</div>
+          <div className="size-slider">
+            <span className="size-slider-end">Compact</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={rowScale}
+              aria-label="Row size"
+              onChange={(e) => onRowScaleChange(Number(e.target.value))}
+            />
+            <span className="size-slider-end">Roomy</span>
           </div>
         </div>
 

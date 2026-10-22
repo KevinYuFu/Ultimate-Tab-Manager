@@ -4,6 +4,7 @@ import Preferences from './components/Preferences'
 import { THEMES, DEFAULT_THEME, type Theme } from './themes'
 import {
   DEFAULT_AI_SORT_ON_STASH,
+  DEFAULT_ROW_SCALE,
   DEFAULT_KEYBINDINGS,
   DEFAULT_STASH_ALL_OPENS_FULL_VIEW,
   type Keybindings,
@@ -18,10 +19,11 @@ export default function App() {
     DEFAULT_STASH_ALL_OPENS_FULL_VIEW,
   )
   const [aiSortOnStash, setAiSortOnStash] = useState(DEFAULT_AI_SORT_ON_STASH)
+  const [rowScale, setRowScale] = useState(DEFAULT_ROW_SCALE)
 
   useEffect(() => {
     chrome.storage.local.get(
-      ['themeId', 'keybindings', 'stashAllOpensFullView', 'aiSortOnStash'],
+      ['themeId', 'keybindings', 'stashAllOpensFullView', 'aiSortOnStash', 'rowScale'],
       (result) => {
         if (result.themeId) {
           const found = THEMES.find(t => t.id === result.themeId)
@@ -35,6 +37,9 @@ export default function App() {
         }
         if (typeof result.aiSortOnStash === 'boolean') {
           setAiSortOnStash(result.aiSortOnStash)
+        }
+        if (typeof result.rowScale === 'number') {
+          setRowScale(result.rowScale)
         }
       },
     )
@@ -59,6 +64,16 @@ export default function App() {
     setAiSortOnStash(value)
     chrome.storage.local.set({ aiSortOnStash: value })
   }
+
+  const saveRowScale = (value: number) => {
+    setRowScale(value)
+    chrome.storage.local.set({ rowScale: value })
+  }
+
+  // The CSS reads --row-scale to size the tab and bin rows (see index.css).
+  useEffect(() => {
+    document.documentElement.style.setProperty('--row-scale', String(rowScale))
+  }, [rowScale])
 
   useEffect(() => {
     const vars: Record<string, string> = {
@@ -100,6 +115,8 @@ export default function App() {
           onStashAllOpensFullViewChange={saveStashAllOpensFullView}
           aiSortOnStash={aiSortOnStash}
           onAiSortOnStashChange={saveAiSortOnStash}
+          rowScale={rowScale}
+          onRowScaleChange={saveRowScale}
           onBack={() => setView('navigator')}
         />
       )}
