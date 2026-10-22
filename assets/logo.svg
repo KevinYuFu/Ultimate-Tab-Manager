@@ -3,11 +3,11 @@
        Source for public/icons (npm run icons); 16px uses logo-small.svg. -->
   <path d="M64 30 L64 18" stroke="#2E7D32" stroke-width="7" stroke-linecap="round"/>
   <path d="M66 20 C70 8 84 4 98 7 C95 20 82 26 66 20Z" fill="#34C759"/>
-  <path d="M67.50 63.55 L67.50 28.14 A44 44 0 0 1 92.54 38.51 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M72.45 68.50 L97.49 43.46 A44 44 0 0 1 107.86 68.50 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M72.45 75.50 L107.86 75.50 A44 44 0 0 1 97.49 100.54 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M60.50 80.45 L60.50 115.86 A44 44 0 0 1 35.46 105.49 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M55.55 75.50 L30.51 100.54 A44 44 0 0 1 20.14 75.50 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M55.55 68.50 L20.14 68.50 A44 44 0 0 1 30.51 43.46 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M60.50 63.55 L35.46 38.51 A44 44 0 0 1 60.50 28.14 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M70.50 56.31 L70.48 26.46 A46 46 0 0 1 91.62 35.22 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M79.69 65.50 L100.78 44.38 A46 46 0 0 1 109.54 65.52 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M79.69 78.50 L109.54 78.48 A46 46 0 0 1 100.78 99.62 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M57.50 87.69 L57.52 117.54 A46 46 0 0 1 36.38 108.78 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M48.31 78.50 L27.22 99.62 A46 46 0 0 1 18.46 78.48 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M48.31 65.50 L18.46 65.52 A46 46 0 0 1 27.22 44.38 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M57.50 56.31 L36.38 35.22 A46 46 0 0 1 57.52 26.46 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="6" stroke-linejoin="round"/>
 </svg>
