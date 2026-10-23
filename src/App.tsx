@@ -65,8 +65,8 @@ export default function App() {
     chrome.storage.local.set({ aiSortOnStash: value })
   }
 
+  // The slider resizes rows live via setRowScale and only saves on release.
   const saveRowScale = (value: number) => {
-    setRowScale(value)
     chrome.storage.local.set({ rowScale: value })
   }
 
@@ -116,7 +116,8 @@ export default function App() {
           aiSortOnStash={aiSortOnStash}
           onAiSortOnStashChange={saveAiSortOnStash}
           rowScale={rowScale}
-          onRowScaleChange={saveRowScale}
+          onRowScaleChange={setRowScale}
+          onRowScaleSave={saveRowScale}
           onBack={() => setView('navigator')}
         />
       )}

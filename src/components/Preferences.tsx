@@ -31,6 +31,7 @@ type Props = {
   onAiSortOnStashChange: (value: boolean) => void
   rowScale: number
   onRowScaleChange: (value: number) => void
+  onRowScaleSave: (value: number) => void
   onBack: () => void
 }
 
@@ -45,6 +46,7 @@ export default function Preferences({
   onAiSortOnStashChange,
   rowScale,
   onRowScaleChange,
+  onRowScaleSave,
   onBack,
 }: Props) {
   const premium = hasPremium()
@@ -125,6 +127,10 @@ export default function Preferences({
               value={rowScale}
               aria-label="Row size"
               onChange={(e) => onRowScaleChange(Number(e.target.value))}
+              // Save once on release, not on every step of the drag. onKeyUp
+              // covers arrow keys, which move the slider without a pointer.
+              onPointerUp={(e) => onRowScaleSave(Number(e.currentTarget.value))}
+              onKeyUp={(e) => onRowScaleSave(Number(e.currentTarget.value))}
             />
             <span className="size-slider-end">Roomy</span>
           </div>
