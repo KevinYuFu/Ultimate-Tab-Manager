@@ -87,6 +87,13 @@ export default function Navigator({
   const [query, setQuery] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const searching = query.trim() !== ''
+  // Items shown while searching even if they don't match (e.g. a bin created
+  // mid-search, so you can see it to name it). Cleared when the search ends.
+  const [pinnedInSearch, setPinnedInSearch] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    // Return the same Set when it's already empty, so React skips the re-render.
+    if (!searching) setPinnedInSearch(prev => (prev.size ? new Set() : prev))
+  }, [searching])
 
   // Reset to root if the scope bin disappears (deleted/undone).
   useEffect(() => {
@@ -112,8 +119,8 @@ export default function Navigator({
     }
     for (const b of bins) if (b.parentId === null) keepBin(b.id, b.name)
   }
-  const showBin = (b: Bin) => !searching || visibleBinIds.has(b.id)
-  const showTab = (t: Tab) => !searching || visibleTabIds.has(t.id)
+  const showBin = (b: Bin) => !searching || visibleBinIds.has(b.id) || pinnedInSearch.has(b.id)
+  const showTab = (t: Tab) => !searching || visibleTabIds.has(t.id) || pinnedInSearch.has(t.id)
 
   // The flat visible tree in render order (bins with their subtrees, then tabs)
   // — the sequence the arrow keys walk. When searching we recurse regardless of
@@ -201,6 +208,8 @@ export default function Navigator({
   const handleNewBin = async () => {
     const bin = await createBin(null)
     await recordCreateBin(bin)
+    // New bins are created at root, so pinning the bin alone is enough to show it.
+    if (searching) setPinnedInSearch(prev => new Set(prev).add(bin.id))
     await refresh()
     setExpanded(prev => new Set(prev).add(bin.id))
     sel.selectBin(bin.id)
