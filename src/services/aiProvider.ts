@@ -23,6 +23,11 @@ function getApiKey(): string | null {
   return typeof key === 'string' && key.trim() ? key.trim() : null
 }
 
+// False in the store build (`npm run build:store`), which is built without a key.
+export function hasApiKey(): boolean {
+  return getApiKey() !== null
+}
+
 // Ask the model which existing bin each tab belongs to. Uses a forced tool call
 // so the response is guaranteed-valid structured JSON. Throws on any failure;
 // the caller (aiSort) treats a throw as "sort nothing".

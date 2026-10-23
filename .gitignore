@@ -7,3 +7,6 @@ dist/
 .env.local
 *.local
 scripts/.test-ai.cjs
+
+# Store upload, made by npm run build:store
+tangerine-tab.zip
