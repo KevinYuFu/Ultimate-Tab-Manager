@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/build-sw.mjs",
-    "build:store": "VITE_ANTHROPIC_API_KEY= npm run build && ! grep -rq 'sk-ant-' dist && rm -f tangerine-tab.zip && cd dist && zip -qr ../tangerine-tab.zip .",
+    "build:store": "VITE_ANTHROPIC_API_KEY= npm run build && ! grep -rq 'sk-ant-' dist && node scripts/strip-store-manifest.mjs && rm -f tangerine-tab.zip && cd dist && zip -qr ../tangerine-tab.zip .",
     "preview": "vite preview",
     "test": "vitest run",
     "icons": "rsvg-convert -w 16 -h 16 assets/logo-small.svg -o public/icons/icon-16.png && for s in 32 48 128; do rsvg-convert -w $s -h $s assets/logo.svg -o public/icons/icon-$s.png; done",
