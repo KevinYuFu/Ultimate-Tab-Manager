@@ -244,8 +244,9 @@ body.full-view .app {
   z-index: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: calc(8px + 2px * var(--row-scale, 1));
+  min-height: calc(41px + 5px * var(--row-scale, 1));
+  padding: calc(4px + 1px * var(--row-scale, 1)) 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -304,7 +305,9 @@ body.full-view .app {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  /* Same height as a tab row at the smallest size; a step shorter at the largest. */
+  min-height: calc(41px - 3px * var(--row-scale, 1));
+  padding: 4px 10px;
   cursor: pointer;
   user-select: none;
 }
@@ -339,8 +342,15 @@ body.full-view .app {
   color: var(--accent-2);
   flex-shrink: 0;
 }
+/* Folders are a step smaller than tab tiles. */
+.row-tile.bin-icon {
+  width: calc(22px + 2px * var(--row-scale, 1));
+  height: calc(22px + 2px * var(--row-scale, 1));
+  border-radius: calc(6px + 1px * var(--row-scale, 1));
+}
 .bin-name {
   flex: 1;
+  margin-left: 2px;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-1);
@@ -366,25 +376,70 @@ body.full-view .app {
   line-height: 1;
 }
 
-.tab-favicon {
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
+/* The rounded square at the start of a row: favicon, letter, or folder */
+.row-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(22px + 6px * var(--row-scale, 1));
+  height: calc(22px + 6px * var(--row-scale, 1));
   flex-shrink: 0;
+  border-radius: calc(6px + 2px * var(--row-scale, 1));
+  background: var(--surface-2);
+  border: 1px solid var(--border);
 }
-.tab-favicon-fallback {
-  color: var(--text-3);
-  flex-shrink: 0;
+.row-tile.letter {
+  border: none;
+  color: #fff;
+  font-size: calc(11px + 1px * var(--row-scale, 1));
+  font-weight: 600;
 }
 
-.tab-name {
+.tab-favicon {
+  width: calc(14px + 2px * var(--row-scale, 1));
+  height: calc(14px + 2px * var(--row-scale, 1));
+  border-radius: 4px;
+}
+
+/* Two-line text: title, then site (· bin while searching) */
+.row-text {
   flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.row-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.tab-name {
   font-size: 13px;
+  font-weight: 500;
   color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.row-meta {
+  font-size: calc(11px + 0.5px * var(--row-scale, 1));
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right side of a tab row: time ago. Hover swaps it for the action buttons. */
+.row-trailing {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.tab-row:hover .row-trailing { display: none; }
 
 .tab-spinner {
   flex-shrink: 0;
@@ -393,16 +448,6 @@ body.full-view .app {
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-.tab-host {
-  font-size: 11px;
-  color: var(--text-3);
-  flex-shrink: 0;
-  white-space: nowrap;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .tab-actions {
@@ -416,6 +461,10 @@ body.full-view .app {
 .tab-row:hover .tab-actions,
 .bin-row:hover .tab-actions,
 .bin-row.sorting .tab-actions { opacity: 1; }
+/* Tab rows swap the actions in place of the time (see .row-trailing), so the
+   hidden actions mustn't take up space. */
+.tab-row .tab-actions { display: none; }
+.tab-row:hover .tab-actions { display: flex; }
 
 .tab-icon-btn {
   display: flex;
@@ -623,6 +672,22 @@ body.full-view .app {
   margin-bottom: 10px;
 }
 .prefs-section-label-row .prefs-section-label { margin-bottom: 0; }
+
+/* Row size slider: Compact ←→ Roomy */
+.size-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.size-slider input {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.size-slider-end {
+  font-size: 11px;
+  color: var(--text-3);
+}
 
 /* Setting row with a toggle switch */
 .setting-row {

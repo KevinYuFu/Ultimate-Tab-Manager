@@ -1,9 +1,12 @@
-import { Globe, LoaderCircle, Pencil, Trash2 } from 'lucide-react'
+import { LoaderCircle, Pencil, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import type { Tab } from '../types'
+import { timeAgo } from '../utils'
 
 type Props = {
   tab: Tab
+  // Shown after the site while searching, when the tree context is hidden.
+  binName?: string
   depth: number
   firstInGroup: boolean
   lastInGroup: boolean
@@ -31,8 +34,18 @@ function hostname(url: string): string {
   }
 }
 
+// Tabs without a favicon get a letter tile. The color comes from the site name,
+// so the same site always gets the same color.
+const LETTER_COLORS = ['#5b8def', '#e05d5d', '#9b6cf0', '#3fa97c', '#e08a3c', '#d2559a', '#4bb0c4', '#7c8794']
+function letterColor(host: string): string {
+  let hash = 0
+  for (const ch of host) hash = (hash * 31 + ch.charCodeAt(0)) | 0
+  return LETTER_COLORS[Math.abs(hash) % LETTER_COLORS.length]
+}
+
 export default function TabRow({
   tab,
+  binName,
   depth,
   firstInGroup,
   lastInGroup,
@@ -54,6 +67,7 @@ export default function TabRow({
   const [faviconError, setFaviconError] = useState(false)
   const cancelledRef = useRef(false)
   const showFavicon = tab.favicon && !faviconError
+  const host = hostname(tab.url)
 
   const className = ['tab-row', selected && 'selected', dragging && 'dragging']
     .filter(Boolean)
@@ -86,14 +100,18 @@ export default function TabRow({
       )}
       {number && <span className="row-number">{number}</span>}
       {showFavicon ? (
-        <img
-          className="tab-favicon"
-          src={tab.favicon}
-          alt=""
-          onError={() => setFaviconError(true)}
-        />
+        <span className="row-tile">
+          <img
+            className="tab-favicon"
+            src={tab.favicon}
+            alt=""
+            onError={() => setFaviconError(true)}
+          />
+        </span>
       ) : (
-        <Globe className="tab-favicon-fallback" size={16} strokeWidth={1.5} />
+        <span className="row-tile letter" style={{ background: letterColor(host) }}>
+          {(host || tab.name).charAt(0).toUpperCase()}
+        </span>
       )}
 
       {editing ? (
@@ -124,11 +142,19 @@ export default function TabRow({
         />
       ) : (
         <>
-          <span className="tab-name">{tab.name}</span>
-          {tab.needsSort && (
-            <LoaderCircle className="tab-spinner" size={12} strokeWidth={2} aria-label="Sorting…" />
-          )}
-          <span className="tab-host">{hostname(tab.url)}</span>
+          <div className="row-text">
+            <span className="row-title">
+              <span className="tab-name">{tab.name}</span>
+              {tab.needsSort && (
+                <LoaderCircle className="tab-spinner" size={12} strokeWidth={2} aria-label="Sorting…" />
+              )}
+            </span>
+            <span className="row-meta">
+              {host}
+              {binName && <> · {binName}</>}
+            </span>
+          </div>
+          <span className="row-trailing">{timeAgo(tab.dateAdded)}</span>
           {/* Stop dblclick here: after a delete the next row shifts under the
               cursor, so a rapid second click on this button would otherwise
               register as a double-click on the row and open the tab. */}

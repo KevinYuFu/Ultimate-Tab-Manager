@@ -542,6 +542,9 @@ export default function Navigator({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [handlers, editing, keybindings, scopeItems, quickSelect, moveCursor, enterBin, handleGoBack, handleOpenSelection])
 
+  // While searching the tree is hidden, so tab rows show their bin's name.
+  const binName = new Map(bins.map(b => [b.id, b.name]))
+
   // A tab renders with an insertion line before or after it when it's the
   // reorder target. Renders the row plus its lines so it works in any group.
   const renderTab = (tab: Tab, depth: number, firstInGroup = false, lastInGroup = false) => {
@@ -553,6 +556,7 @@ export default function Navigator({
         {dropBefore && <div className="drop-line" style={lineStyle} />}
         <TabRow
           tab={tab}
+          binName={searching && tab.binId ? binName.get(tab.binId) : undefined}
           depth={depth}
           firstInGroup={firstInGroup}
           lastInGroup={lastInGroup}
