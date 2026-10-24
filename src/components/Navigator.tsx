@@ -648,7 +648,7 @@ export default function Navigator({
       <header className="nav-header">
         <span className="nav-logo">
           <img src="icons/icon-32.png" alt="" className="nav-logo-icon" />
-          Tangerine Tab
+          Tangerine Tabs
         </span>
         <div className="nav-header-right">
           {PRIMARY.map(({ op, label }) => (

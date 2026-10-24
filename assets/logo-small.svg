@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Simplified Tangerine Tab logo for 16px: inner gaps blur at that size. -->
+  <!-- Simplified Tangerine Tabs logo for 16px: inner gaps blur at that size. -->
   <path d="M64 30 L64 18" stroke="#2E7D32" stroke-width="7" stroke-linecap="round"/>
   <path d="M66 20 C70 8 84 4 98 7 C95 20 82 26 66 20Z" fill="#34C759"/>
   <path d="M64 72 L64.00 118.00 A46 46 0 1 1 96.53 104.53 Z" fill="#FF8A1F" stroke="#FF8A1F" stroke-width="4" stroke-linejoin="round"/>
