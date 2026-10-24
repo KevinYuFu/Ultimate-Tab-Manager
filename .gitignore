@@ -9,4 +9,4 @@ dist/
 scripts/.test-ai.cjs
 
 # Store upload, made by npm run build:store
-tangerine-tab.zip
+tangerine-tabs.zip

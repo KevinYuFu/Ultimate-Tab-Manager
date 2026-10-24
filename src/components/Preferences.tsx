@@ -182,7 +182,7 @@ export default function Preferences({
             Set Extension Shortcut
           </button>
           <p className="shortcut-hint">
-            Opens <code>chrome://extensions/shortcuts</code> where you can bind a key to open Tangerine Tab.
+            Opens <code>chrome://extensions/shortcuts</code> where you can bind a key to open Tangerine Tabs.
           </p>
         </div>
 
