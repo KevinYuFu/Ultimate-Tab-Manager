@@ -1,6 +1,6 @@
-<img src="assets/logo.svg" width="96" alt="Tangerine Tab logo" />
+<img src="assets/logo.svg" width="96" alt="Tangerine Tabs logo" />
 
-# Tangerine Tab
+# Tangerine Tabs
 
 A keyboard-driven Chrome Extension for tab hoarders. Stash, organize, and reopen tabs instantly — without losing anything.
 

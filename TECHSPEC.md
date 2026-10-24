@@ -1,11 +1,11 @@
-# Tech Spec — Tangerine Tab
+# Tech Spec — Tangerine Tabs
 
 ---
 
 ## 1. Overview
 > One paragraph. What is this product and what problem does it solve?
 
-Tangerine Tab is a Tab Management Google Chrome Extention to help tab horders and others with adhd manage their tabs by allowing them to close them, rename them, and organize them as they desire.
+Tangerine Tabs is a Tab Management Google Chrome Extention to help tab horders and others with adhd manage their tabs by allowing them to close them, rename them, and organize them as they desire.
 This Tab Manager allows closing many tabs at once while keeping track of these tabs in it's memory and easily navigate and restoring tabs extremely easy. Using this tab manager should feel like using vim or like the ux in a video game.
 
 ---

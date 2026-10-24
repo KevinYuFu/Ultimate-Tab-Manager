@@ -1,11 +1,11 @@
-# CLAUDE.md — Working agreement for Tangerine Tab
+# CLAUDE.md — Working agreement for Tangerine Tabs
 
 This file defines how we build in this repo. It applies to every Claude session
 working here. Keep it short and current.
 
 ## Project
 
-Tangerine Tab — a keyboard-driven Chrome Extension (Manifest V3) for tab
+Tangerine Tabs — a keyboard-driven Chrome Extension (Manifest V3) for tab
 hoarders. Stack: TypeScript, React, Tailwind, Vite. See `TECHSPEC.md` for the
 product spec and `README.md` for the overview.
 
